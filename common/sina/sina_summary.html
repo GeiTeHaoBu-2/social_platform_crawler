@@ -1,0 +1,1326 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge"/>
+    <meta name="renderer" content="webkit"/>
+    <meta name="viewport" content="initial-scale=1,minimum-scale=1"/>
+    <title>微博搜索-热搜榜</title>
+
+    <!--智搜-->
+    <link href="//img.t.sinajs.cn/t4/appstyle/searchpc/css/new_pc/css/aisearch/mediaModule/mediaModule.css?version=202512121117" rel="stylesheet"/>
+    <link href="//img.t.sinajs.cn/t4/appstyle/searchpc/css/new_pc/css/aisearch/mdCard/index.css?version=202512121117" rel="stylesheet"/>
+
+    <link href="//img.t.sinajs.cn/t4/appstyle/searchpc/css/new_pc/css/video.css?version=202512121117" rel="stylesheet"/>
+    <link href="//img.t.sinajs.cn/t4/appstyle/searchpc/css/new_pc/css/global.css?version=202512121117" rel="stylesheet" />
+    <link href="//img.t.sinajs.cn/t4/appstyle/searchpc/css/new_pc/css/module.css?version=202512121117" rel="stylesheet" />
+    <link href="//img.t.sinajs.cn/t4/appstyle/searchpc/css/new_pc/css/page.css?version=202512121117" rel="stylesheet" />
+    <link href="//img.t.sinajs.cn/t4/appstyle/searchpc/css/new_pc/css/card.css?version=202512121117" rel="stylesheet" />
+    <link href="//img.t.sinajs.cn/t4/appstyle/searchpc/css/new_pc/css/css_v6/layer/layer_show_pic.css?version=202512121117" rel="stylesheet" />
+
+    <link href="//img.t.sinajs.cn/t4/appstyle/searchpc/css/new_pc/css/wooui.css?version=202512121117" rel="stylesheet" />
+    <link href="//img.t.sinajs.cn/t4/appstyle/searchpc/css/new_pc/css/vars.css" rel="stylesheet" />
+    <link href="//img.t.sinajs.cn/t4/appstyle/searchpc/css/new_pc/css/woo_font/fonticon.css?version=202512121117" rel="stylesheet" />
+    <link href="//img.t.sinajs.cn/t4/appstyle/searchpc/css/new_pc/css/new.css?version=202512121117" rel="stylesheet" />
+
+    <link rel="stylesheet" href="//js.t.sinajs.cn/t4/apps/searchpc/js/pcNew/top-nav/weibo-top-nav.css?version=202512121117">
+    <link rel="stylesheet" href="//js.t.sinajs.cn/t4/apps/searchpc/js/pcNew/copyright/weibo-copyright.css?version=202512121117">
+    <script type="text/javascript">
+        var $PHOTO_TAGS=[]
+        var $CONFIG = {};
+        $CONFIG['islogin'] = '1';
+        $CONFIG['uid'] = '7788585077';
+        $CONFIG['nick'] = '数计院信管1223吴纪辰';
+        $CONFIG['domain'] = '';
+        $CONFIG['watermark'] = '数计院信管1223吴纪辰';
+        $CONFIG['prov'] = '100:其他';
+        $CONFIG['city'] = '';
+        $CONFIG['setCover'] = 1; //ie6hack
+        $CONFIG['version'] = '202512121117';
+        $CONFIG['bigpipe'] = 'false';
+        $CONFIG['timeDiff'] = (new Date() - 1765711494000);
+        $CONFIG['product'] = 'search';
+        $CONFIG['pageid'] = 'top';
+        $CONFIG['skin'] = '';
+        $CONFIG['lang'] = 'zh-cn';
+        $CONFIG['jsPath'] = '//jstest.t.sinajs.cn/t4/';
+        $CONFIG['cssPath'] = '//img.t.sinajs.cn/t4/';
+        $CONFIG['imgPath'] = '//img.t.sinajs.cn/t4/';
+        $CONFIG['servertime'] = 1765711494;
+        $CONFIG['ad_url_jump'] = '';
+        $CONFIG['$webim'] = 0; //1;
+        $CONFIG['mJsPath'] = ['https://js{n}.t.sinajs.cn/t4/', 1, 2];
+        $CONFIG['mCssPath'] = ['https://img{n}.t.sinajs.cn/t4/', 1, 2];
+        $CONFIG['s_domain'] = '//s.weibo.com';
+        $CONFIG['isAuto'] = 0;//0自动播放
+    </script>
+
+
+    <script src="//js.t.sinajs.cn/t5/pack/js/bootstrap.js"></script>
+
+    <link rel="stylesheet" href="https://js.t.sinajs.cn/t4/apps/searchpc/js/pcNew/video/weibo-video-player.css?version=202512121117">
+    <script src="https://js.t.sinajs.cn/t4/apps/searchpc/js/falcon3/vue.min.js"></script>
+    <script src="https://js.t.sinajs.cn/t4/apps/searchpc/js/falcon3/vue-router.min.js"></script>
+    <script src="https://js.t.sinajs.cn/t4/apps/searchpc/js/falcon3/axios.min.js"></script>
+
+    <script src="//js.t.sinajs.cn/t4/apps/searchpc/js/falcon3/katex.min.js"></script>
+    <script src="//js.t.sinajs.cn/t4/apps/searchpc/js/falcon3/marked.umd.js"></script>
+    <script src="//js.t.sinajs.cn/t4/apps/searchpc/js/falcon3/markedKatex.js"></script>
+    <script src="//js.t.sinajs.cn/t4/apps/searchpc/js/falcon3/qs.min.js"></script>
+    <script src="//js.t.sinajs.cn/t4/apps/searchpc/js/falcon3/qrcode.min.js"></script>
+    <script src="//js.t.sinajs.cn/t4/apps/searchpc/js/falcon3/modern-screenshot4.6.5.js"></script>
+    <script src="//img.t.sinajs.cn/t4/appstyle/searchpc/css/new_pc/css/aisearch/utils.js?version=202512121117"></script>
+
+    <script src="//js.t.sinajs.cn/t4/apps/searchpc/js/pcNew/video/weibo-video-player.umd.js?version=202512121117"></script>
+    <script src="//js.t.sinajs.cn/t4/apps/searchpc/js/pcNew/top-nav/weibo-top-nav.umd.js?version=202512121117"></script>
+    <script src="//js.t.sinajs.cn/t4/apps/searchpc/js/pcNew/wooui/wooui.umd.js?version=202512121117"></script>
+    <script src="//js.t.sinajs.cn/t4/apps/searchpc/js/pcNew/copyright/weibo-copyright.umd.js?version=202512121117"></script>
+    <!-- ai search-->
+    <script src="//img.t.sinajs.cn/t4/appstyle/searchpc/css/new_pc/css/aisearch/purify.min.js?version=202512121117"></script>
+    <script src="//img.t.sinajs.cn/t4/appstyle/searchpc/css/new_pc/css/aisearch/morphdom-umd.min.js?version=202512121117"></script>
+    <script src="//img.t.sinajs.cn/t4/appstyle/searchpc/css/new_pc/css/aisearch/index.js?version=202512121117"></script>
+    <link href="//img.t.sinajs.cn/t4/appstyle/searchpc/css/new_pc/css/aisearch/index.css?version=202512121117" rel="stylesheet" />
+    <link href="//img.t.sinajs.cn/t4/appstyle/searchpc/css/new_pc/css/aisearch/katex.min.css?version=202512121117" rel="stylesheet" />
+
+    <script src="//img.t.sinajs.cn/t4/appstyle/searchpc/css/new_pc/css/aisearch/mdCard/mdCard.js?version=202512121117"></script>
+    <link href="//img.t.sinajs.cn/t4/appstyle/searchpc/css/new_pc/css/aisearch/mdCard/index.css?version=202512121117" rel="stylesheet" />
+
+    <script src="//img.t.sinajs.cn/t4/appstyle/searchpc/css/new_pc/css/aisearch/mediaModule/mediaModule.js?version=202512121117"></script>
+    <link href="//img.t.sinajs.cn/t4/appstyle/searchpc/css/new_pc/css/aisearch/mediaModule/mediaModule.css?version=202512121117" rel="stylesheet" />
+
+    <script src="//img.t.sinajs.cn/t4/appstyle/searchpc/css/new_pc/css/aisearch/textCard/textCard.js?version=202512121117"></script>
+    <link href="//img.t.sinajs.cn/t4/appstyle/searchpc/css/new_pc/css/aisearch/textCard/textCard.css?version=202512121117" rel="stylesheet" />
+
+    <script src="//img.t.sinajs.cn/t4/appstyle/searchpc/css/new_pc/css/aisearch/tab/index.js?version=202512121117"></script>
+    <link href="//img.t.sinajs.cn/t4/appstyle/searchpc/css/new_pc/css/aisearch/tab/zhishoutab.css?version=202512121117" rel="stylesheet" />
+    <!-- end ai search-->
+    <style>
+        p[sport-card] {
+            display: none;
+        }
+        p[sport-card]~.media, .con>div:has(p[sport-card]) .media{
+            position: relative;
+            overflow: hidden;
+            z-index: 0;
+        }
+        p[sport-card]~.media:before, .con>div:has(p[sport-card]) .media:before {
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            content: "";
+            background: #f9f9f9;
+            z-index: 1;
+        }
+        p[sport-card]~.media:after, .con>div:has(p[sport-card]) .media:after {
+            position: absolute;
+            left: -100%; /*改变left的值，让其相对box影藏*/
+            top: 0;
+            width: 40%;
+            height: 100%;
+            content: "";
+            background: linear-gradient(to right, rgba(255, 255, 255, 0) 0, rgba(255, 255, 255, .5) 50%, rgba(255, 255, 255, 0) 100%);
+            transform: skewX(-45deg);
+            animation: skeleton-flash 1.5s infinite;
+            z-index: 2;
+        }
+        @keyframes skeleton-flash {
+            0% {
+                left: -100%;
+            }
+            100% {
+                left: 150%;
+            }
+        }
+    </style>
+
+</head>
+<body class="wbs-hotrank">
+<!-- 定义 SVG 符号库 -->
+<svg xmlns="http://www.w3.org/2000/svg" style="display: none;">
+    <defs>
+        <!-- 赞icon (已赞) -->
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" id="def_woo_svg_liked">
+            <path fill="#E04023" d="M98.1 41.6c-2.2-3.7-5.8-5.8-9.7-6.1l-25.9-.1c2.1-5.2 3.3-10.9 3.3-17 .3-6-1.1-18.7-12.2-18.5C47.2.1 42 5.4 42 12.1v1.4C42 26.9 32 37.8 19.4 39c0 0-12 .1-16 .1-.7 0-1.8.4-2.4 1.1-.6.6-1 1.5-1 2.5v53.7c0 1 .5 1.9 1.1 2.6.6.6 1.3 1 2.2 1.1h77.8c1.8 0 4.4-.9 6-2 3.9-3.1 4.5-5.5 5.3-9.4 2.1-10 7.7-39.6 7.7-39.6 0-2.7-.6-5.2-2-7.5M17.3 92.8H7V46.2h10.3v46.6m68.4-6.2c-.2.8-1.2 4.4-2.5 5.3-1.2.9-2.6.9-2.6.9H24.2V45c10.8-3.3 20.5-11.2 23-22.6.8-3.6 1.5-11 1.5-11s.3-4.6 4.7-4.6c2.5 0 4.7 1.7 5.3 5 .9 4.2 1.1 8.2-1.4 17.2-.9 3.1-1.6 4.6-2.8 7 0 0-.9 1.2-.9 3.1 0 2 1.5 3.6 3.3 3.6l31.5.2c1.6 0 3.2.8 4.2 2.3.6 1 .7 2 .6 3.1l-7.5 38.3">
+            </path>
+            <path fill="#FFD7A5" d="M85.7 86.6c-.2.8-1.2 4.4-2.5 5.3-1.2.9-2.6.9-2.6.9H24.2V45c10.8-3.3 20.5-11.2 23-22.6.8-3.6 1.5-11 1.5-11s.3-4.6 4.7-4.6c2.5 0 4.7 1.7 5.3 5 .9 4.2 1.1 8.2-1.4 17.2-.9 3.1-1.6 4.6-2.8 7 0 0-.9 1.2-.9 3.1 0 2 1.5 3.6 3.3 3.6l31.5.2c1.6 0 3.2.8 4.2 2.3.6 1 .7 2 .6 3.1l-7.5 38.3">
+            </path>
+            <path fill="#F48700" d="M17.3 92.8H7V46.2h10.3v46.6">
+            </path>
+        </svg>
+
+        <!-- 赞icon（未点赞） -->
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" id="def_woo_svg_like" width="100%" height="100%">
+            <path fill="currentColor" d="M98.1 41.6c-2.2-3.7-5.8-5.8-9.7-6.1l-25.9-.1c2.1-5.2 3.3-10.9 3.3-17 .3-6-1.1-18.7-12.2-18.5C47.2.1 42 5.4 42 12.1v1.4C42 26.9 32 37.8 19.4 39c0 0-12 .1-16 .1-.7 0-1.8.4-2.4 1.1-.6.6-1 1.5-1 2.5v53.7c0 1 .5 1.9 1.1 2.6.6.6 1.3 1 2.2 1.1h77.8c1.8 0 4.4-.9 6-2 3.9-3.1 4.5-5.5 5.3-9.4 2.1-10 7.7-39.6 7.7-39.6 0-2.7-.6-5.2-2-7.5M17.3 92.8H7V46.2h10.3v46.6m68.4-6.2c-.2.8-1.2 4.4-2.5 5.3-1.2.9-2.6.9-2.6.9H24.2V45c10.8-3.3 20.5-11.2 23-22.6.8-3.6 1.5-11 1.5-11s.3-4.6 4.7-4.6c2.5 0 4.7 1.7 5.3 5 .9 4.2 1.1 8.2-1.4 17.2-.9 3.1-1.6 4.6-2.8 7 0 0-.9 1.2-.9 3.1 0 2 1.5 3.6 3.3 3.6l31.5.2c1.6 0 3.2.8 4.2 2.3.6 1 .7 2 .6 3.1l-7.5 38.3">
+            </path>
+        </svg>
+    </defs>
+</svg>
+<!-- 定义 SVG 符号库 -->
+<div>
+    <div style="margin-bottom: var(--frame-mod-gap-space);height:60px;"  id="searchapps">
+                <weibo-top-nav :user="{ id: '7788585077', avatar: 'https://tvax1.sinaimg.cn/default/images/default_avatar_male_180.gif?KID=imgbed,tva&Expires=1765722294&ssig=nSQAldT2BY', name: '数计院信管1223吴纪辰', profile_url: 'https://weibo.com/u/7788585077' }" cur-version="7" @publish="publish" ajax-base-url="//weibo.com" :data="topData"></weibo-top-nav>
+            </div>
+<style type="text/css">
+    .m-footer{position:relative;margin: 0 auto;}
+    .icon-txt-len-2 {
+        width: 32px;
+        margin-left: -3px !important;
+    }
+</style>
+<div class="m-main">
+    <div class="woo-box-flex">
+        <div class="m-main-nav">
+            <h2>微博热搜</h2>
+            <ul>
+                <li><a href="summary?cate=recommend" title="我的"><i class="recommend_rank_icon"></i>我的</a></li>
+                <li><a href="summary?cate=realtimehot" title="热搜" class="cur"><i class="realtime_rank_icon"></i>热搜</a></li>
+                <li><a href="summary?cate=entrank" title="文娱"><i class="ent_rank_icon"></i>文娱</a></li>
+                <li><a href="summary?cate=life" title="生活"><i class="life_rank_icon"></i>生活</a></li>
+                <li><a href="summary?cate=socialevent" title="社会"><i class="social_rank_icon"></i>社会</a></li>
+            </ul>
+        </div>
+    <!--内容 aa-->
+    <div class="m-wrap" id="plc_main">
+        <div class="data" id="pl_top_realtimehot">
+            <table>
+                <thead>
+                <tr class="thead_tr">
+                    <th class="th-01">序号</th>
+                    <th class="th-02">关键词</th>
+                    <th class="th-03"></th>
+                </tr>
+                </thead>
+                <tbody>
+                    <tr class="">
+                            <td class="td-01"><i class="icon-top"></i></td>
+                            <td class="td-02">
+                                <a href="/weibo?q=%23%E4%B9%A0%E8%BF%91%E5%B9%B3%E6%80%BB%E4%B9%A6%E8%AE%B0%E6%B7%B1%E5%88%BB%E8%A7%A3%E6%9E%90%E5%9B%A0%E5%9C%B0%E5%88%B6%E5%AE%9C%23&Refer=new_time" target="_blank">习近平总书记深刻解析因地制宜</a>
+                            </td>
+                            <td class="td-03"><i class="icon-txt icon-txt-hot">热</i></td>
+                        </tr>
+                    <tr class="">
+                                                        <td class="td-01 ranktop ranktop1">1</td>
+                                                        <td class="td-02">
+                                                                <a href="/weibo?q=%E6%BC%94%E5%91%98%E4%BD%95%E6%99%B4%E5%8E%BB%E4%B8%96&t=31&band_rank=1&Refer=top" target="_blank">演员何晴去世</a>
+                                                                <span> 1137103</span>
+                                                            </td>
+                            <td class="td-03"><i class="icon-txt icon-txt-len-1"  style="background-color:#ff9406;">热</i></td>
+                            <!--<td class="td-03">
+                                                                <div style="width: 56px;height: 28px;display: flex;align-content: center;">
+                                    <img src="https://simg.s.weibo.com/moter/flags/2_0.png" style="height: 28px;"/>
+                                </div>
+                                                            </td>-->
+                        </tr>
+                                                                                            <tr class="">
+                                                        <td class="td-01 ranktop ranktop2">2</td>
+                                                        <td class="td-02">
+                                                                <a href="/weibo?q=%234%E6%96%A4%E9%BB%84%E9%87%91%E5%87%A4%E5%86%A0%E8%A2%AB%E6%AF%81%E4%B8%9A%E5%86%85%E7%A7%B0%E9%87%8D%E5%81%9A20%E4%B8%87%E8%B5%B7%23&t=31&band_rank=2&Refer=top" target="_blank">4斤黄金凤冠被毁业内称重做20万起</a>
+                                                                <span> 428784</span>
+                                                            </td>
+                            <td class="td-03"></td>
+                            <!--<td class="td-03">
+                                                            </td>-->
+                        </tr>
+                                                                                            <tr class="">
+                                                        <td class="td-01 ranktop ranktop3">3</td>
+                                                        <td class="td-02">
+                                                                <a href="/weibo?q=%23%E6%B5%B7%E5%8D%97%E8%87%AA%E8%B4%B8%E6%B8%AF%E5%B0%81%E5%85%B3%E5%B0%86%E5%B8%A6%E6%9D%A5%E6%9B%B4%E5%A4%9A%E6%9C%BA%E9%81%87%23&t=31&band_rank=3&Refer=top" target="_blank">海南自贸港封关将带来更多机遇</a>
+                                                                <span> 377674</span>
+                                                            </td>
+                            <td class="td-03"></td>
+                            <!--<td class="td-03">
+                                                            </td>-->
+                        </tr>
+                                                                                            <tr class="">
+                                                        <td class="td-01 ranktop ranktop4">4</td>
+                                                        <td class="td-02">
+                                                                <a href="/weibo?q=%23%E6%82%89%E5%B0%BC%E9%82%A6%E8%BF%AA%E6%BB%A9%E6%9E%AA%E5%87%BB%E4%BA%8B%E4%BB%B610%E4%BA%BA%E6%AD%BB%E4%BA%A1%23&t=31&band_rank=4&Refer=top" target="_blank">悉尼邦迪滩枪击事件10人死亡</a>
+                                                                <span> 376522</span>
+                                                            </td>
+                            <td class="td-03"><i class="icon-txt icon-txt-len-1"  style="background-color:#ff3852;">新</i></td>
+                            <!--<td class="td-03">
+                                                                <div style="width: 56px;height: 28px;display: flex;align-content: center;">
+                                    <img src="https://simg.s.weibo.com/moter/flags/1_0.png" style="height: 28px;"/>
+                                </div>
+                                                            </td>-->
+                        </tr>
+                                                                                            <tr class="">
+                                                        <td class="td-01 ranktop ranktop5">5</td>
+                                                        <td class="td-02">
+                                                                <a href="/weibo?q=%23%E5%9B%BD%E4%B9%92%E7%94%B7%E5%8D%95%E6%97%A0%E7%BC%985%E8%BF%9E%E5%86%A0%23&t=31&band_rank=5&Refer=top" target="_blank">国乒男单无缘5连冠</a>
+                                                                <span> 239266</span>
+                                                            </td>
+                            <td class="td-03"></td>
+                            <!--<td class="td-03">
+                                                            </td>-->
+                        </tr>
+                                                                                            <tr class="">
+                                                        <td class="td-01 ranktop ranktop6">6</td>
+                                                        <td class="td-02">
+                                                                <a href="/weibo?q=%23%E5%BC%A0%E8%89%BA%E5%85%B4%E5%8F%91%E6%96%87%E9%81%93%E6%AD%89%23&t=31&band_rank=6&Refer=top" target="_blank">张艺兴发文道歉</a>
+                                                                <span>演出 7157749</span>
+                                                            </td>
+                            <td class="td-03"><i class="icon-txt icon-txt-len-1"  style="background-color:#bd0000;">爆</i></td>
+                            <!--<td class="td-03">
+                                                                <div style="width: 56px;height: 28px;display: flex;align-content: center;">
+                                    <img src="https://simg.s.weibo.com/moter/flags/4_0.png" style="height: 28px;"/>
+                                </div>
+                                                            </td>-->
+                        </tr>
+                                                                                            <tr class="">
+                                                        <td class="td-01 ranktop ranktop7">7</td>
+                                                        <td class="td-02">
+                                                                <a href="/weibo?q=%E4%BD%95%E7%82%85%20%E5%B7%B2%E7%BB%8F%E5%9C%A8%E5%8A%AA%E5%8A%9B%E5%8A%9D%E6%9E%B6%E4%BA%86&t=31&band_rank=7&Refer=top" target="_blank">何炅 已经在努力劝架了</a>
+                                                                <span>综艺 238668</span>
+                                                            </td>
+                            <td class="td-03"><i class="icon-txt icon-txt-len-1"  style="background-color:#ff9406;">热</i></td>
+                            <!--<td class="td-03">
+                                                                <div style="width: 56px;height: 28px;display: flex;align-content: center;">
+                                    <img src="https://simg.s.weibo.com/moter/flags/2_0.png" style="height: 28px;"/>
+                                </div>
+                                                            </td>-->
+                        </tr>
+                                                                                            <tr class="">
+                                                        <td class="td-01 ranktop ranktop8">8</td>
+                                                        <td class="td-02">
+                                                                <a href="/weibo?q=%23%E6%B6%89%E5%AB%8C%E6%AD%A7%E8%A7%86%E4%B8%AD%E5%9B%BD%E4%BA%BA%E8%8A%AC%E5%85%B0%E5%B0%8F%E5%A7%90%E5%85%AC%E5%BC%80%E9%81%93%E6%AD%89%23&t=31&band_rank=8&Refer=top" target="_blank">涉嫌歧视中国人芬兰小姐公开道歉</a>
+                                                                <span> 238360</span>
+                                                            </td>
+                            <td class="td-03"></td>
+                            <!--<td class="td-03">
+                                                            </td>-->
+                        </tr>
+                                                                                            <tr class="">
+                                                        <td class="td-01 ranktop ranktop9">9</td>
+                                                        <td class="td-02">
+                                                                <a href="/weibo?q=%23%E9%9B%AA%E5%90%8E%E5%A4%A7%E8%8C%83%E5%9B%B4%E5%9B%9E%E6%9A%96%E6%9D%A5%E4%BA%86%23&t=31&band_rank=9&Refer=top" target="_blank">雪后大范围回暖来了</a>
+                                                                <span> 238266</span>
+                                                            </td>
+                            <td class="td-03"></td>
+                            <!--<td class="td-03">
+                                                            </td>-->
+                        </tr>
+                                                                                            <tr class="">
+                                                        <td class="td-01 ranktop ranktop10">10</td>
+                                                        <td class="td-02">
+                                                                <a href="/weibo?q=%23%E5%9B%BD%E5%AE%B6%E5%8F%91%E6%96%87%E7%A6%81%E6%AD%A2%E4%BA%8F%E6%9C%AC%E5%8D%96%E8%BD%A6%23&t=31&band_rank=10&Refer=top" target="_blank">国家发文禁止亏本卖车</a>
+                                                                <span> 237835</span>
+                                                            </td>
+                            <td class="td-03"></td>
+                            <!--<td class="td-03">
+                                                            </td>-->
+                        </tr>
+                                                                                            <tr class="">
+                                                        <td class="td-01 ranktop ranktop11">11</td>
+                                                        <td class="td-02">
+                                                                <a href="/weibo?q=%E5%BC%A0%E8%89%BA%E5%85%B4%20%E5%9B%BD%E5%AE%B6%E8%AF%9D%E5%89%A7%E9%99%A2%E6%B4%BB%E5%8A%A8&t=31&band_rank=11&Refer=top" target="_blank">张艺兴 国家话剧院活动</a>
+                                                                <span>演出 237348</span>
+                                                            </td>
+                            <td class="td-03"><i class="icon-txt icon-txt-len-1"  style="background-color:#ff3852;">新</i></td>
+                            <!--<td class="td-03">
+                                                                <div style="width: 56px;height: 28px;display: flex;align-content: center;">
+                                    <img src="https://simg.s.weibo.com/moter/flags/1_0.png" style="height: 28px;"/>
+                                </div>
+                                                            </td>-->
+                        </tr>
+                                                                                            <tr class="">
+                                                        <td class="td-01 ranktop ranktop12">12</td>
+                                                        <td class="td-02">
+                                                                <a href="/weibo?q=%E7%BE%8E%E4%BC%A2%E8%A6%81%E9%97%AD%E5%BA%97%E4%BA%86&t=31&band_rank=12&Refer=top" target="_blank">美伢要闭店了</a>
+                                                                <span> 237115</span>
+                                                            </td>
+                            <td class="td-03"><i class="icon-txt icon-txt-len-1"  style="background-color:#ff3852;">新</i></td>
+                            <!--<td class="td-03">
+                                                                <div style="width: 56px;height: 28px;display: flex;align-content: center;">
+                                    <img src="https://simg.s.weibo.com/moter/flags/1_0.png" style="height: 28px;"/>
+                                </div>
+                                                            </td>-->
+                        </tr>
+                                                                                            <tr class="">
+                                                        <td class="td-01 ranktop ranktop13">13</td>
+                                                        <td class="td-02">
+                                                                <a href="/weibo?q=%E9%99%88%E5%A6%8D%E5%B8%8C%20%E9%A6%99%E5%A5%88%E5%84%BF%E8%80%81%E4%BA%86%E8%BF%98%E6%98%AF%E9%A6%99%E5%A5%88%E5%84%BF&t=31&band_rank=13&Refer=top" target="_blank">陈妍希 香奈儿老了还是香奈儿</a>
+                                                                <span>剧集 236811</span>
+                                                            </td>
+                            <td class="td-03"><i class="icon-txt icon-txt-len-1"  style="background-color:#ff3852;">新</i></td>
+                            <!--<td class="td-03">
+                                                                <div style="width: 56px;height: 28px;display: flex;align-content: center;">
+                                    <img src="https://simg.s.weibo.com/moter/flags/1_0.png" style="height: 28px;"/>
+                                </div>
+                                                            </td>-->
+                        </tr>
+                                                                                            <tr class="">
+                                                        <td class="td-01 ranktop ranktop14">14</td>
+                                                        <td class="td-02">
+                                                                <a href="/weibo?q=%2328%E5%B2%81%E5%9D%A0%E4%BA%A1%E5%A5%B3%E5%AD%90%E6%9B%BE%E4%BB%A5%E5%B2%97%E4%BD%8D%E7%AC%AC%E4%B8%80%E8%80%83%E4%B8%8A%E6%95%99%E5%B8%88%23&t=31&band_rank=14&Refer=top" target="_blank">28岁坠亡女子曾以岗位第一考上教师</a>
+                                                                <span> 236115</span>
+                                                            </td>
+                            <td class="td-03"></td>
+                            <!--<td class="td-03">
+                                                            </td>-->
+                        </tr>
+                                                                                            <tr class="">
+                                                        <td class="td-01 ranktop ranktop15">15</td>
+                                                        <td class="td-02">
+                                                                <a href="/weibo?q=%E5%BC%A0%E6%9C%AC%E6%99%BA%E5%92%8C%E5%8F%88%E5%8F%88%E5%8F%88%E8%87%B4%E6%95%AC%E6%A8%8A%E6%8C%AF%E4%B8%9C&t=31&band_rank=15&Refer=top" target="_blank">张本智和又又又致敬樊振东</a>
+                                                                <span> 235777</span>
+                                                            </td>
+                            <td class="td-03"></td>
+                            <!--<td class="td-03">
+                                                            </td>-->
+                        </tr>
+                                                                                            <tr class="">
+                                                        <td class="td-01 ranktop ranktop16">16</td>
+                                                        <td class="td-02">
+                                                                <a href="/weibo?q=%234300%E4%B8%87%E7%BD%91%E7%BA%A2%E5%88%98%E4%BA%8C%E7%8B%97%E6%B3%B3%E6%B1%A0%E7%9B%B4%E6%92%AD%E8%A2%AB%E6%8C%87%E6%93%A6%E8%BE%B9%23&t=31&band_rank=16&Refer=top" target="_blank">4300万网红刘二狗泳池直播被指擦边</a>
+                                                                <span> 235331</span>
+                                                            </td>
+                            <td class="td-03"><i class="icon-txt icon-txt-len-1"  style="background-color:#ff3852;">新</i></td>
+                            <!--<td class="td-03">
+                                                                <div style="width: 56px;height: 28px;display: flex;align-content: center;">
+                                    <img src="https://simg.s.weibo.com/moter/flags/1_0.png" style="height: 28px;"/>
+                                </div>
+                                                            </td>-->
+                        </tr>
+                                                                                            <tr class="">
+                                                        <td class="td-01 ranktop ranktop17">17</td>
+                                                        <td class="td-02">
+                                                                <a href="/weibo?q=%E6%82%89%E5%B0%BC&t=31&band_rank=17&Refer=top" target="_blank">悉尼</a>
+                                                                <span> 235240</span>
+                                                            </td>
+                            <td class="td-03"></td>
+                            <!--<td class="td-03">
+                                                            </td>-->
+                        </tr>
+                                                                                            <tr class="">
+                                                        <td class="td-01 ranktop ranktop18">18</td>
+                                                        <td class="td-02">
+                                                                <a href="/weibo?q=%23%E5%A4%96%E7%BD%91%E6%9B%9D%E9%9C%89%E9%9C%89%E4%BC%B4%E8%88%9E%E6%AF%8F%E4%B8%AA%E4%BA%BA%E5%88%86%E5%88%B0%E4%BA%86500%E5%A4%9A%E4%B8%87%23&t=31&band_rank=18&Refer=top" target="_blank">外网曝霉霉伴舞每个人分到了500多万</a>
+                                                                <span> 234887</span>
+                                                            </td>
+                            <td class="td-03"></td>
+                            <!--<td class="td-03">
+                                                            </td>-->
+                        </tr>
+                                                                                            <tr class="">
+                                                        <td class="td-01 ranktop ranktop19">19</td>
+                                                        <td class="td-02">
+                                                                <a href="/weibo?q=%23%E4%BD%95%E6%99%B4%E6%9C%80%E5%90%8E%E4%B8%80%E6%AC%A1%E5%85%AC%E5%BC%80%E9%9C%B2%E9%9D%A2%23&t=31&band_rank=19&Refer=top" target="_blank">何晴最后一次公开露面</a>
+                                                                <span> 225304</span>
+                                                            </td>
+                            <td class="td-03"><i class="icon-txt icon-txt-len-1"  style="background-color:#ff3852;">新</i></td>
+                            <!--<td class="td-03">
+                                                                <div style="width: 56px;height: 28px;display: flex;align-content: center;">
+                                    <img src="https://simg.s.weibo.com/moter/flags/1_0.png" style="height: 28px;"/>
+                                </div>
+                                                            </td>-->
+                        </tr>
+                                                                                            <tr class="">
+                                                        <td class="td-01 ranktop ranktop20">20</td>
+                                                        <td class="td-02">
+                                                                <a href="/weibo?q=%23%E5%A5%B3%E5%AD%90%E7%BB%93%E5%A9%9A14%E5%B9%B4%E8%A2%AB%E5%AE%B6%E6%9A%B413%E5%B9%B4%23&t=31&band_rank=20&Refer=top" target="_blank">女子结婚14年被家暴13年</a>
+                                                                <span> 214824</span>
+                                                            </td>
+                            <td class="td-03"><i class="icon-txt icon-txt-len-1"  style="background-color:#ff3852;">新</i></td>
+                            <!--<td class="td-03">
+                                                                <div style="width: 56px;height: 28px;display: flex;align-content: center;">
+                                    <img src="https://simg.s.weibo.com/moter/flags/1_0.png" style="height: 28px;"/>
+                                </div>
+                                                            </td>-->
+                        </tr>
+                                                                                            <tr class="">
+                                                        <td class="td-01 ranktop ranktop21">21</td>
+                                                        <td class="td-02">
+                                                                <a href="/weibo?q=%E5%81%B6%E9%81%87%E7%BB%B4%E5%98%89%E4%BB%A5%E4%B8%BA%E6%98%AF%E4%BF%84%E7%BD%97%E6%96%AF%E7%BE%8E%E5%A5%B3&t=31&band_rank=21&Refer=top" target="_blank">偶遇维嘉以为是俄罗斯美女</a>
+                                                                <span> 214774</span>
+                                                            </td>
+                            <td class="td-03"></td>
+                            <!--<td class="td-03">
+                                                            </td>-->
+                        </tr>
+                                                                                            <tr class="">
+                                                        <td class="td-01 ranktop ranktop22">22</td>
+                                                        <td class="td-02">
+                                                                <a href="/weibo?q=%23%E6%9C%80%E4%BD%B3%E5%85%A5%E7%9D%A1%E6%97%B6%E9%97%B4%E5%92%8C%E7%9D%A1%E7%9C%A0%E6%97%B6%E9%95%BF%23&t=31&band_rank=22&Refer=top" target="_blank">最佳入睡时间和睡眠时长</a>
+                                                                <span> 214439</span>
+                                                            </td>
+                            <td class="td-03"></td>
+                            <!--<td class="td-03">
+                                                            </td>-->
+                        </tr>
+                                                                                            <tr class="">
+                                                        <td class="td-01 ranktop ranktop23">23</td>
+                                                        <td class="td-02">
+                                                                <a href="/weibo?q=%E4%B8%8B%E9%99%8D%E4%BD%93%E8%84%82%E7%8E%87%E6%9C%80%E5%BF%AB%E7%9A%846%E4%B8%AA%E6%96%B9%E6%B3%95&t=31&band_rank=23&Refer=top" target="_blank">下降体脂率最快的6个方法</a>
+                                                                <span> 212561</span>
+                                                            </td>
+                            <td class="td-03"><i class="icon-txt icon-txt-len-1"  style="background-color:#ff3852;">新</i></td>
+                            <!--<td class="td-03">
+                                                                <div style="width: 56px;height: 28px;display: flex;align-content: center;">
+                                    <img src="https://simg.s.weibo.com/moter/flags/1_0.png" style="height: 28px;"/>
+                                </div>
+                                                            </td>-->
+                        </tr>
+                                                                                            <tr class="">
+                                                        <td class="td-01 ranktop ranktop24">24</td>
+                                                        <td class="td-02">
+                                                                <a href="/weibo?q=%23%E6%9D%8E%E7%8E%B0%E6%8B%8D%E7%9A%84%E9%9B%AA%E5%90%8E%E6%95%85%E5%AE%AB%23&t=31&band_rank=24&Refer=top" target="_blank">李现拍的雪后故宫</a>
+                                                                <span> 204829</span>
+                                                            </td>
+                            <td class="td-03"><i class="icon-txt icon-txt-len-1"  style="background-color:#ff3852;">新</i></td>
+                            <!--<td class="td-03">
+                                                                <div style="width: 56px;height: 28px;display: flex;align-content: center;">
+                                    <img src="https://simg.s.weibo.com/moter/flags/1_0.png" style="height: 28px;"/>
+                                </div>
+                                                            </td>-->
+                        </tr>
+                                                                                            <tr class="">
+                                                        <td class="td-01 ranktop ranktop25">25</td>
+                                                        <td class="td-02">
+                                                                <a href="/weibo?q=%E7%8B%99%E5%87%BB%E8%9D%B4%E8%9D%B6&t=31&band_rank=25&Refer=top" target="_blank">狙击蝴蝶</a>
+                                                                <span>剧集 198431</span>
+                                                            </td>
+                            <td class="td-03"><i class="icon-txt icon-txt-len-1"  style="background-color:#ff3852;">新</i></td>
+                            <!--<td class="td-03">
+                                                                <div style="width: 56px;height: 28px;display: flex;align-content: center;">
+                                    <img src="https://simg.s.weibo.com/moter/flags/1_0.png" style="height: 28px;"/>
+                                </div>
+                                                            </td>-->
+                        </tr>
+                                                                                            <tr class="">
+                                                        <td class="td-01 ranktop ranktop26">26</td>
+                                                        <td class="td-02">
+                                                                <a href="/weibo?q=%E4%BD%95%E6%99%B4%20%E8%AE%B8%E4%BA%9A%E5%86%9B&t=31&band_rank=26&Refer=top" target="_blank">何晴 许亚军</a>
+                                                                <span> 193077</span>
+                                                            </td>
+                            <td class="td-03"></td>
+                            <!--<td class="td-03">
+                                                            </td>-->
+                        </tr>
+                                                                                            <tr class="">
+                                                        <td class="td-01 ranktop ranktop27">27</td>
+                                                        <td class="td-02">
+                                                                <a href="/weibo?q=%E4%BB%99%E9%80%86&t=31&band_rank=27&Refer=top" target="_blank">仙逆</a>
+                                                                <span> 191251</span>
+                                                            </td>
+                            <td class="td-03"><i class="icon-txt icon-txt-len-1"  style="background-color:#ff3852;">新</i></td>
+                            <!--<td class="td-03">
+                                                                <div style="width: 56px;height: 28px;display: flex;align-content: center;">
+                                    <img src="https://simg.s.weibo.com/moter/flags/1_0.png" style="height: 28px;"/>
+                                </div>
+                                                            </td>-->
+                        </tr>
+                                                                                            <tr class="">
+                                                        <td class="td-01 ranktop ranktop28">28</td>
+                                                        <td class="td-02">
+                                                                <a href="/weibo?q=%23%E7%8E%8B%E6%A5%9A%E9%92%A6%E5%AD%99%E9%A2%96%E8%8E%8E%E6%9C%AC%E6%9C%88%E8%BF%98%E8%A6%81%E6%89%93%E4%B9%92%E8%B6%85%23&t=31&band_rank=28&Refer=top" target="_blank">王楚钦孙颖莎本月还要打乒超</a>
+                                                                <span> 173590</span>
+                                                            </td>
+                            <td class="td-03"><i class="icon-txt icon-txt-len-1"  style="background-color:#ff3852;">新</i></td>
+                            <!--<td class="td-03">
+                                                                <div style="width: 56px;height: 28px;display: flex;align-content: center;">
+                                    <img src="https://simg.s.weibo.com/moter/flags/1_0.png" style="height: 28px;"/>
+                                </div>
+                                                            </td>-->
+                        </tr>
+                                                                                            <tr class="">
+                                                        <td class="td-01 ranktop ranktop29">29</td>
+                                                        <td class="td-02">
+                                                                <a href="/weibo?q=%23%E7%BD%91%E4%BC%A0%E6%9D%A8%E7%B4%AB%E6%9D%8E%E7%8E%B0%E5%B0%86%E4%B8%89%E6%90%AD%23&t=31&band_rank=29&Refer=top" target="_blank">网传杨紫李现将三搭</a>
+                                                                <span> 171908</span>
+                                                            </td>
+                            <td class="td-03"><i class="icon-txt icon-txt-len-1"  style="background-color:#ff3852;">新</i></td>
+                            <!--<td class="td-03">
+                                                                <div style="width: 56px;height: 28px;display: flex;align-content: center;">
+                                    <img src="https://simg.s.weibo.com/moter/flags/1_0.png" style="height: 28px;"/>
+                                </div>
+                                                            </td>-->
+                        </tr>
+                                                                                            <tr class="">
+                                                        <td class="td-01 ranktop ranktop30">30</td>
+                                                        <td class="td-02">
+                                                                <a href="/weibo?q=%23%E5%A5%B6%E8%8C%B6%E5%8A%9B%E6%8C%BAzwy%23&t=31&band_rank=30&Refer=top" target="_blank">奶茶力挺zwy</a>
+                                                                <span> 166885</span>
+                                                            </td>
+                            <td class="td-03"></td>
+                            <!--<td class="td-03">
+                                                            </td>-->
+                        </tr>
+                                                                                            <tr class="">
+                                                        <td class="td-01 ranktop ranktop31">31</td>
+                                                        <td class="td-02">
+                                                                <a href="/weibo?q=%E7%AC%AC%E4%B8%80%E6%AC%A1%E5%9C%A8%E8%B0%A2%E5%A8%9C%E8%84%B8%E4%B8%8A%E7%9C%8B%E5%88%B0%E6%97%A0%E5%8A%A9&t=31&band_rank=31&Refer=top" target="_blank">第一次在谢娜脸上看到无助</a>
+                                                                <span> 156537</span>
+                                                            </td>
+                            <td class="td-03"></td>
+                            <!--<td class="td-03">
+                                                            </td>-->
+                        </tr>
+                                                                                            <tr class="">
+                                                        <td class="td-01 ranktop ranktop32">32</td>
+                                                        <td class="td-02">
+                                                                <a href="/weibo?q=%23%E5%88%98%E4%BA%A6%E8%8F%B2%E6%99%92%E5%88%9D%E9%9B%AA%E5%93%88%E5%93%88%E5%90%88%E7%85%A7%23&t=31&band_rank=32&Refer=top" target="_blank">刘亦菲晒初雪哈哈合照</a>
+                                                                <span> 153507</span>
+                                                            </td>
+                            <td class="td-03"></td>
+                            <!--<td class="td-03">
+                                                            </td>-->
+                        </tr>
+                                                                                            <tr class="">
+                                                        <td class="td-01 ranktop ranktop33">33</td>
+                                                        <td class="td-02">
+                                                                <a href="/weibo?q=%E5%96%9C%E4%BA%BA%E5%A5%87%E5%A6%99%E5%A4%9C&t=31&band_rank=33&Refer=top" target="_blank">喜人奇妙夜</a>
+                                                                <span>综艺 148749</span>
+                                                            </td>
+                            <td class="td-03"><i class="icon-txt icon-txt-len-1"  style="background-color:#ff3852;">新</i></td>
+                            <!--<td class="td-03">
+                                                                <div style="width: 56px;height: 28px;display: flex;align-content: center;">
+                                    <img src="https://simg.s.weibo.com/moter/flags/1_0.png" style="height: 28px;"/>
+                                </div>
+                                                            </td>-->
+                        </tr>
+                                                                                            <tr class="">
+                                                        <td class="td-01 ranktop ranktop34">34</td>
+                                                        <td class="td-02">
+                                                                <a href="/weibo?q=%E5%AE%9D%E5%AE%9D%E4%BD%A0%E6%89%8D%E4%B8%A4%E4%B8%AA%E6%9C%88%E8%84%9A%E6%80%8E%E4%B9%88%E5%B0%B1%E8%BF%99%E4%B9%88%E5%A4%A7%E4%BA%86&t=31&band_rank=34&Refer=top" target="_blank">宝宝你才两个月脚怎么就这么大了</a>
+                                                                <span> 143200</span>
+                                                            </td>
+                            <td class="td-03"><i class="icon-txt icon-txt-len-1"  style="background-color:#ff3852;">新</i></td>
+                            <!--<td class="td-03">
+                                                                <div style="width: 56px;height: 28px;display: flex;align-content: center;">
+                                    <img src="https://simg.s.weibo.com/moter/flags/1_0.png" style="height: 28px;"/>
+                                </div>
+                                                            </td>-->
+                        </tr>
+                                                                                            <tr class="">
+                                                        <td class="td-01 ranktop ranktop35">35</td>
+                                                        <td class="td-02">
+                                                                <a href="/weibo?q=%E5%8E%95%E6%89%80%E5%AE%89%E8%A3%85%E5%90%B8%E7%83%9F%E4%BC%9A%E5%8F%98%E9%80%8F%E6%98%8E%E7%8E%BB%E7%92%83&t=31&band_rank=35&Refer=top" target="_blank">厕所安装吸烟会变透明玻璃</a>
+                                                                <span> 136758</span>
+                                                            </td>
+                            <td class="td-03"><i class="icon-txt icon-txt-len-1"  style="background-color:#ff3852;">新</i></td>
+                            <!--<td class="td-03">
+                                                                <div style="width: 56px;height: 28px;display: flex;align-content: center;">
+                                    <img src="https://simg.s.weibo.com/moter/flags/1_0.png" style="height: 28px;"/>
+                                </div>
+                                                            </td>-->
+                        </tr>
+                                                                                            <tr class="">
+                                                        <td class="td-01 ranktop ranktop36">36</td>
+                                                        <td class="td-02">
+                                                                <a href="/weibo?q=%E6%A0%B8%E5%BF%83%E5%91%98%E5%B7%A5%E7%A6%BB%E8%81%8C%E5%89%8D%E9%AA%82%E4%BA%86%E5%85%AC%E5%8F%B8%E6%89%80%E6%9C%89%E4%BA%BA&t=31&band_rank=36&Refer=top" target="_blank">核心员工离职前骂了公司所有人</a>
+                                                                <span>综艺 135732</span>
+                                                            </td>
+                            <td class="td-03"><i class="icon-txt icon-txt-len-1"  style="background-color:#ff3852;">新</i></td>
+                            <!--<td class="td-03">
+                                                                <div style="width: 56px;height: 28px;display: flex;align-content: center;">
+                                    <img src="https://simg.s.weibo.com/moter/flags/1_0.png" style="height: 28px;"/>
+                                </div>
+                                                            </td>-->
+                        </tr>
+                                                                                            <tr class="">
+                                                        <td class="td-01 ranktop ranktop37">37</td>
+                                                        <td class="td-02">
+                                                                <a href="/weibo?q=%23%E5%84%BF%E5%AA%B3%E5%A9%86%E5%A9%86%E4%BD%8F%E4%B8%80%E6%A0%8B%E6%A5%BC%E4%B8%AD%E9%97%B4%E5%8D%B4%E7%A0%8C%E4%BA%86%E4%B8%80%E5%A0%B5%E5%A2%99%23&t=31&band_rank=37&Refer=top" target="_blank">儿媳婆婆住一栋楼中间却砌了一堵墙</a>
+                                                                <span> 128445</span>
+                                                            </td>
+                            <td class="td-03"></td>
+                            <!--<td class="td-03">
+                                                            </td>-->
+                        </tr>
+                                                                                            <tr class="">
+                                                        <td class="td-01 ranktop ranktop38">38</td>
+                                                        <td class="td-02">
+                                                                <a href="/weibo?q=%E5%A5%BD%E5%96%9C%E6%AC%A2%E5%85%85%E6%BB%A1%E7%94%9F%E5%91%BD%E5%8A%9B%E5%8F%88%E5%8F%AF%E7%88%B1%E7%9A%84%E4%BA%BA&t=31&band_rank=38&Refer=top" target="_blank">好喜欢充满生命力又可爱的人</a>
+                                                                <span> 121118</span>
+                                                            </td>
+                            <td class="td-03"><i class="icon-txt icon-txt-len-1"  style="background-color:#ff3852;">新</i></td>
+                            <!--<td class="td-03">
+                                                                <div style="width: 56px;height: 28px;display: flex;align-content: center;">
+                                    <img src="https://simg.s.weibo.com/moter/flags/1_0.png" style="height: 28px;"/>
+                                </div>
+                                                            </td>-->
+                        </tr>
+                                                                                            <tr class="">
+                                                        <td class="td-01 ranktop ranktop39">39</td>
+                                                        <td class="td-02">
+                                                                <a href="/weibo?q=%23T1%E5%AF%B9%E6%88%98HLE%23&t=31&band_rank=39&Refer=top" target="_blank">T1对战HLE</a>
+                                                                <span> 117818</span>
+                                                            </td>
+                            <td class="td-03"></td>
+                            <!--<td class="td-03">
+                                                            </td>-->
+                        </tr>
+                                                                                            <tr class="">
+                                                        <td class="td-01 ranktop ranktop40">40</td>
+                                                        <td class="td-02">
+                                                                <a href="/weibo?q=%23%E5%A5%B3%E5%AD%90%E7%A7%B0%E7%BD%91%E8%B4%AD%E7%9A%84%E5%9D%9A%E6%9E%9C%E4%B8%8A%E6%9C%89%E7%99%BD%E8%89%B2%E7%97%B0%E7%8A%B6%E7%89%A9%23&t=31&band_rank=40&Refer=top" target="_blank">女子称网购的坚果上有白色痰状物</a>
+                                                                <span> 117816</span>
+                                                            </td>
+                            <td class="td-03"><i class="icon-txt icon-txt-len-1"  style="background-color:#ff3852;">新</i></td>
+                            <!--<td class="td-03">
+                                                                <div style="width: 56px;height: 28px;display: flex;align-content: center;">
+                                    <img src="https://simg.s.weibo.com/moter/flags/1_0.png" style="height: 28px;"/>
+                                </div>
+                                                            </td>-->
+                        </tr>
+                                                                                            <tr class="">
+                                                        <td class="td-01 ranktop ranktop41">41</td>
+                                                        <td class="td-02">
+                                                                <a href="/weibo?q=%2336%E5%B2%81%E7%94%B7%E5%AD%90%E8%BF%BD%E6%B1%8243%E5%B2%81%E5%A5%B3%E5%AD%90%E7%A7%B0%E5%A7%90%E5%A7%90%E4%B8%8D%E4%BD%9C%23&t=31&band_rank=41&Refer=top" target="_blank">36岁男子追求43岁女子称姐姐不作</a>
+                                                                <span> 117816</span>
+                                                            </td>
+                            <td class="td-03"><i class="icon-txt icon-txt-len-1"  style="background-color:#ff3852;">新</i></td>
+                            <!--<td class="td-03">
+                                                                <div style="width: 56px;height: 28px;display: flex;align-content: center;">
+                                    <img src="https://simg.s.weibo.com/moter/flags/1_0.png" style="height: 28px;"/>
+                                </div>
+                                                            </td>-->
+                        </tr>
+                                                                                            <tr class="">
+                                                        <td class="td-01 ranktop ranktop42">42</td>
+                                                        <td class="td-02">
+                                                                <a href="/weibo?q=%E6%97%A5%E6%9C%AC%E4%BA%BA%E7%9A%84%E6%99%9A%E9%A4%90&t=31&band_rank=42&Refer=top" target="_blank">日本人的晚餐</a>
+                                                                <span> 117816</span>
+                                                            </td>
+                            <td class="td-03"><i class="icon-txt icon-txt-len-1"  style="background-color:#ff3852;">新</i></td>
+                            <!--<td class="td-03">
+                                                                <div style="width: 56px;height: 28px;display: flex;align-content: center;">
+                                    <img src="https://simg.s.weibo.com/moter/flags/1_0.png" style="height: 28px;"/>
+                                </div>
+                                                            </td>-->
+                        </tr>
+                                                                                            <tr class="">
+                                                        <td class="td-01 ranktop ranktop43">43</td>
+                                                        <td class="td-02">
+                                                                <a href="/weibo?q=%E7%AC%AC%E4%B8%80%E6%89%B9%E7%9F%AD%E5%89%A7%E5%8F%97%E5%AE%B3%E8%80%85%E5%87%BA%E7%8E%B0%E4%BA%86&t=31&band_rank=43&Refer=top" target="_blank">第一批短剧受害者出现了</a>
+                                                                <span> 117815</span>
+                                                            </td>
+                            <td class="td-03"></td>
+                            <!--<td class="td-03">
+                                                            </td>-->
+                        </tr>
+                                                                                            <tr class="">
+                                                        <td class="td-01 ranktop ranktop44">44</td>
+                                                        <td class="td-02">
+                                                                <a href="/weibo?q=%E5%85%B3%E6%99%93%E5%BD%A4%E6%B7%A1%E6%B7%A1%E7%9A%84%E5%B0%B1%E5%BE%88%E5%A5%BD&t=31&band_rank=44&Refer=top" target="_blank">关晓彤淡淡的就很好</a>
+                                                                <span> 114522</span>
+                                                            </td>
+                            <td class="td-03"></td>
+                            <!--<td class="td-03">
+                                                            </td>-->
+                        </tr>
+                                                                                            <tr class="">
+                                                        <td class="td-01 ranktop ranktop45">45</td>
+                                                        <td class="td-02">
+                                                                <a href="/weibo?q=%23%E7%BE%8E%E4%BC%A2%E5%9B%9E%E5%BA%94%E9%97%AD%E5%BA%97%23&t=31&band_rank=45&Refer=top" target="_blank">美伢回应闭店</a>
+                                                                <span> 114096</span>
+                                                            </td>
+                            <td class="td-03"><i class="icon-txt icon-txt-len-1"  style="background-color:#ff3852;">新</i></td>
+                            <!--<td class="td-03">
+                                                                <div style="width: 56px;height: 28px;display: flex;align-content: center;">
+                                    <img src="https://simg.s.weibo.com/moter/flags/1_0.png" style="height: 28px;"/>
+                                </div>
+                                                            </td>-->
+                        </tr>
+                                                                                            <tr class="">
+                                                        <td class="td-01 ranktop ranktop46">46</td>
+                                                        <td class="td-02">
+                                                                <a href="/weibo?q=%E9%99%88%E4%BC%9F%E9%9C%86%20%E6%80%8E%E4%B9%88%E5%8F%AF%E8%83%BD%E6%9C%89%E5%89%A7%E6%9C%AC&t=31&band_rank=46&Refer=top" target="_blank">陈伟霆 怎么可能有剧本</a>
+                                                                <span>综艺 112540</span>
+                                                            </td>
+                            <td class="td-03"><i class="icon-txt icon-txt-len-1"  style="background-color:#ff3852;">新</i></td>
+                            <!--<td class="td-03">
+                                                                <div style="width: 56px;height: 28px;display: flex;align-content: center;">
+                                    <img src="https://simg.s.weibo.com/moter/flags/1_0.png" style="height: 28px;"/>
+                                </div>
+                                                            </td>-->
+                        </tr>
+                                                                                            <tr class="">
+                                                        <td class="td-01 ranktop ranktop47">47</td>
+                                                        <td class="td-02">
+                                                                <a href="/weibo?q=%23%E6%BE%B3%E6%9E%AA%E5%87%BB%E4%BA%8B%E4%BB%B6%E9%BB%91%E8%A1%A3%E4%BA%BA%E5%BC%80%E6%9E%AA%E7%9E%AC%E9%97%B4%E6%9B%9D%E5%85%89%23&t=31&band_rank=47&Refer=top" target="_blank">澳枪击事件黑衣人开枪瞬间曝光</a>
+                                                                <span> 100564</span>
+                                                            </td>
+                            <td class="td-03"><i class="icon-txt icon-txt-len-1"  style="background-color:#ff3852;">新</i></td>
+                            <!--<td class="td-03">
+                                                                <div style="width: 56px;height: 28px;display: flex;align-content: center;">
+                                    <img src="https://simg.s.weibo.com/moter/flags/1_0.png" style="height: 28px;"/>
+                                </div>
+                                                            </td>-->
+                        </tr>
+                                                                                            <tr class="">
+                                                        <td class="td-01 ranktop ranktop48">48</td>
+                                                        <td class="td-02">
+                                                                <a href="/weibo?q=%E8%A2%ABlabubu%E5%90%93%E5%88%B0%E8%BA%B2%E8%B5%B7%E6%9D%A5%E7%9A%84%E5%B0%8F%E6%AF%94%E6%A0%BC&t=31&band_rank=48&Refer=top" target="_blank">被labubu吓到躲起来的小比格</a>
+                                                                <span> 95339</span>
+                                                            </td>
+                            <td class="td-03"><i class="icon-txt icon-txt-len-1"  style="background-color:#ff3852;">新</i></td>
+                            <!--<td class="td-03">
+                                                                <div style="width: 56px;height: 28px;display: flex;align-content: center;">
+                                    <img src="https://simg.s.weibo.com/moter/flags/1_0.png" style="height: 28px;"/>
+                                </div>
+                                                            </td>-->
+                        </tr>
+                                                                                            <tr class="">
+                                                        <td class="td-01 ranktop ranktop49">49</td>
+                                                        <td class="td-02">
+                                                                <a href="/weibo?q=%23%E8%99%9E%E4%B9%A6%E6%AC%A3%E5%9B%9E%E5%A4%8D%E4%BD%95%E4%B8%8E%23&t=31&band_rank=49&Refer=top" target="_blank">虞书欣回复何与</a>
+                                                                <span>剧集 95325</span>
+                                                            </td>
+                            <td class="td-03"></td>
+                            <!--<td class="td-03">
+                                                            </td>-->
+                        </tr>
+                                                                                            <tr class="">
+                                                        <td class="td-01 ranktop ranktop50">50</td>
+                                                        <td class="td-02">
+                                                                <a href="/weibo?q=%E7%8E%8B%E7%94%B7%E7%9B%B4%E6%92%AD%E9%A2%84%E5%91%8A&t=31&band_rank=50&Refer=top" target="_blank">王男直播预告</a>
+                                                                <span>综艺 91713</span>
+                                                            </td>
+                            <td class="td-03"><i class="icon-txt icon-txt-len-1"  style="background-color:#ff3852;">新</i></td>
+                            <!--<td class="td-03">
+                                                                <div style="width: 56px;height: 28px;display: flex;align-content: center;">
+                                    <img src="https://simg.s.weibo.com/moter/flags/1_0.png" style="height: 28px;"/>
+                                </div>
+                                                            </td>-->
+                        </tr>
+                                                                            </tbody>
+            </table>
+        </div>
+        <!--脚部-->
+<div class="m-footer">
+        <div class="bottom">
+        <div class="m-outlink">
+            <div class="link">
+                <a href="http://ir.weibo.com/phoenix.zhtml?c=253076&p=irol-irhome" class="icon-wb" target="_blank" title="关于微博">关于微博</a>
+                <a href="https://kefu.weibo.com/" target="_blank" title="微博帮助">微博帮助</a>
+                <a href="https://s.weibo.com/weibo?q=%23%E5%BE%AE%E5%BB%BA%E8%AE%AE%23&bottomnav=1&wvr=6" target="_blank" title="意见反馈">意见反馈</a>
+                <a href="http://open.weibo.com/?bottomnav=1&wvr=5" target="_blank" title="开放平台">开放平台</a>
+                <a href="http://hr.weibo.com/?bottomnav=1&wvr=5" target="_blank" title="微博招聘">微博招聘</a>
+                <a href="http://news.sina.com.cn/guide/?bottomnav=1&wvr=5" target="_blank" title="新浪网导航">新浪网导航</a>
+                <a href="http://service.account.weibo.com/?bottomnav=1&wvr=5&is_redirected=1" target="_blank" title="社区管理中心">社区管理中心</a>
+                <a href="http://service.account.weibo.com/roles/gongyue?bottomnav=1&wvr=5&is_redirected=1" target="_blank" title="微博社区公约">微博社区公约</a>
+            </div>
+            <p class="copyright">
+                Copyright © 2009-2025 WEIBO 北京微梦创科网络技术有限公司
+                <a href="https://weibo.com/aj/static/jww.html" target="_blank">京网文[2011]0398-130号</a>
+                <a href="http://www.miibeian.gov.cn" target="_blank" target="_blank">京ICP备12002058号</a>
+                <!-- <select id="pl_language_language">
+                    <option value="zh-cn" selected="selected">中文(简体)</option>
+                    <option value="zh-tw">中文(繁体)</option>
+                </select> -->
+                </span>
+            </p>
+        </div>
+    </div>
+    </div>
+<!--脚部-->
+
+    </div>
+    <!--/内容-->
+    </div>
+    <script type="text/javascript" charset="UTF-8" src="//js.t.sinajs.cn/t4/apps/searchpc/js/pcNew/js/conf/base.js?version=202512121117"></script>
+    <script type="text/javascript" charset="UTF-8" src="//js.t.sinajs.cn/t4/apps/searchpc/js/pcNew/js/conf/common.js?version=202512121117"></script>
+    <script type="text/javascript" charset="UTF-8" src="//js.t.sinajs.cn/t4/apps/searchpc/js/pcNew/js/conf/summary.js?version=202512121117"></script>
+</div>
+</div>
+<!--回到顶部-->
+<div id="pl_common_scrollToTop">
+    <div class="m-gotop woo-panel-main woo-panel-top woo-panel-right woo-panel-bottom woo-panel-left" node-type="scrollToTop" style="z-index: 99;display: none;">
+        <a href="javascript:void 0;" class="woo-box-flex woo-box-alignCenter woo-box-justifyCenter backtop"><i class="woo-font woo-font--backTop"></i></a>
+    </div>
+</div>
+
+<div class="modal-overlay" id="ai_rule_layer">
+    <div class="modal-content">
+      <div class="modal-content-title">微博智搜使用须知
+        <span class="close-btn" id="ai_rule_close_btn">
+          <svg id="ai_rule_close_btn" width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M10.5138 0.254965C10.8537 -0.0849883 11.4052 -0.0849882 11.7452 0.254965C12.0852 0.594918 12.0852 1.14646 11.7452 1.48641L7.23153 6.00008L11.7452 10.5138C12.0852 10.8537 12.0852 11.4052 11.7452 11.7452C11.4052 12.0852 10.8537 12.0852 10.5138 11.7452L6.00008 7.23153L1.48641 11.7452C1.14646 12.0852 0.594918 12.0852 0.254965 11.7452C-0.0849882 11.4052 -0.0849883 10.8537 0.254965 10.5138L4.76864 6.00008L0.254965 1.48641C-0.0849883 1.14646 -0.0849883 0.594918 0.254965 0.254965C0.594918 -0.0849883 1.14646 -0.0849883 1.48641 0.254965L6.00008 4.76864L10.5138 0.254965Z" fill="#838383" style="fill:#838383;fill:color(display-p3 0.5137 0.5137 0.5137);fill-opacity:1;"/>
+          </svg>
+        </span>
+      </div>
+
+      <div class="instruction-container">
+        <div class="instruction-title">欢迎使用由微博运营方及合作方为您提供的微博智搜（以下简称"本服务"）！请您仔细阅读，充分了解并同意本使用须知的全部内容后再使用本服务。</div>
+        <!--特别提示-->
+        <div class="special-container">
+          <p class="container_title">特别提示</p>
+          <ol class="container_list">
+            <li class="instruction_tips">微博智搜对搜索结果的智能总结，不代表微博平台官方立场、态度及观点，相关输出内容仅供您参考。</li>
+            <li class="instruction_tips">生成式人工智能技术仍在快速发展的阶段，我们虽尽最大努力提供安全可控的服务，但基于技术发展的局限，无法完全保证其生成内容的完整性、真实性、准确性、及时性及实用性，您需根据自己的实际情况做出独立判断。您在使用本服务过程中，不应将微博智搜生成的内容视为您依赖的依据或建议，不应将微博智搜生成的内容用于决策或商业目的。特别地，如涉及对您或者相关方可能会产生重大影响的事宜，例如与健康、医疗、财务、投资、保险等有关的场景或目的，建议您咨询相关专业人士。如您根据微博智搜生成的内容作出判断或者采取行动，其所带来的后果和责任均由您自行承担。</li>
+            <li class="instruction_tips">微博智搜可能不会实时更新，部分信息可能存在一定的滞后性。请您注意信息的时效性。</li>
+            <li class="instruction_tips">在发现微博智搜的生成内容存在准确性不足、引发争议、违反法律法规等情形时，我们将适时采取相关措施进行优化及调整。</li>
+            <li class="instruction_tips">请您在使用本服务过程中避免提交任何形式的敏感个人信息；如您输入的信息含有在特定形式下可能被识别为个人信息的内容，我们将视为您已获得相关权利人的明确同意或具备其他有效的法律依据。</li>
+            <li class="instruction_tips">如您需要发布或传播利用微博智搜生成的内容时，您应当以显著方式予以标识或提示，不得引起误解。</li>
+            <li class="instruction_tips">您使用本服务生成的内容，包括但不限于文本、图片、音视频等，仅供您个人学习、研究、娱乐或欣赏使用，不得用于任何商业或其他用途。禁止使用本服务生成的内容从事任何违法、违规或侵犯他人权益的行为。</li>
+            <li class="instruction_tips">如您为未满18岁的未成年人，请您务必在法定监护人的陪同、指导下阅读本使用须知，并取得法定监护人的同意后方可使用本服务。</li>
+            <li class="instruction_tips">如果您对本服务生成的内容有任何疑问、建议或意见，请您通过页面显示的反馈入口向我们进行反馈，我们将及时进行处理。</li>
+          </ol>
+        </div>
+        <!--使用规范-->
+        <div class="using-container">
+          <p class="container_title">使用规范</p>
+          <ol class="container_list">
+            <li class="using_tips">您在使用本服务时，应当遵守国家法律法规、公序良俗、微博平台其他相关规则（包括但不限于《微博服务使用协议》《微博个人信息保护政策》《微博社区公约》等）等，且不得侵犯任何第三方的合法权益，不得利用本服务从事任何违法、违规或侵犯他人权益的行为，不得输入或诱导生成违反法律法规、公序良俗内容，亦不得存储、传播该等内容，我们有权根据法律法规、本使用须知、微博平台相关规则等规定，对您使用本服务的情况进行监督和调整，但前述监督和调整并不代表我们对您使用本服务及生成内容提供保证或担保。</li>
+            <li class="using_tips">在您使用本服务过程中，您输入的信息的知识产权归属于您或者相关信息的权利人。对于微博智搜接收您输入的信息后生成的内容，根据相关法律法规的规定，微博享有对应的合法权益。如您输入和/或微博智搜生成内容本身包含了微博或其他权利人享有知识产权或其他合法权益的内容，则您输入和/或微博智搜生成的相应权利由微博或相应权利人继续享有，不因其出现在微博智搜使用过程中而改变其权属。</li>
+            <li class="using_tips">如我们或我们的授权主体发现或通过第三方举报或投诉获知，您存在或涉嫌违法违规、违反本使用须知、违反微博平台相关规则等规定的行为，我们或我们的授权主体有权依据法律法规、本使用须知或微博平台相关规则等规定进行处理，由此造成的损失及后果由您自行独立承担。</li>
+            <li class="using_tips">本须知是《微博服务使用协议》的组成部分。我们保留对本使用须知进行更新和修订的权利，以及对本服务内容进行调整的权利。如有任何变更，我们将在平台上及时通知用户。</li>
+          </ol>
+        </div>
+      </div>
+    </div>
+  </div>
+<!--/回到顶部-->
+<script type="text/javascript" charset="utf-8" async="" src="//js.t.sinajs.cn/open/analytics/js/suda.js?version=2018080418263900"></script>
+<!-- SUDA_CODE_START -->
+<noscript><img width="0" height="0" src="//beacon.sina.com.cn/a.gif?noScript" border="0" alt="" /></noscript>
+<!-- SUDA_CODE_END -->
+</body>
+<!-- <script type="text/javascript" charset="UTF-8" src="//js.t.sinajs.cn/t4/apps/searchpc/js/pcNew/js/conf/base.js?version=202512121117"></script>
+<script type="text/javascript" charset="UTF-8" src="//js.t.sinajs.cn/t4/apps/searchpc/js/pcNew/js/conf/weiboTopPublic.js?version=202512121117"></script> -->
+
+<!--添加sport-card-->
+<script>
+    document.addEventListener("DOMContentLoaded", (event) => {
+        let sportCards = document.querySelectorAll(".card .content>p[sport-card]");
+        let sportCardsRetweet = document.querySelectorAll(".card .content .card-comment p[sport-card]")
+        function findClosestCardParent(element) {
+            let current = element;
+            while (current) {
+                if (current.classList.contains('card')) {
+                    return current;
+                }
+                current = current.parentNode;
+            }
+            return null;
+        }
+        function changeCardToSportCards(nodeArr, media){
+            nodeArr.forEach(function (sport) {
+                let dataString = sport.getAttribute("sport-card");
+                const closestCardParent = findClosestCardParent(sport);
+                try {
+                    const data = JSON.parse(decodeURIComponent(dataString));
+                    const imgBack = data.media_pic_url;
+                    const imgBefore = data.pic_url;
+                    const videoSrc = data.media_stream_url;
+                    const repost_text = data.repost_text;
+                    const target_url = data.target_url.trim();
+                    // 创建 cardContainer 元素并添加子元素
+                    let cardContainer = document.createElement("div");
+                    cardContainer.style = `
+            position: relative;
+            width:100%;
+            height: fit-content;
+            cursor: pointer;
+            margin-top: 10px;
+            `;
+
+                    if(imgBack){
+                        // 创建 img 元素
+                        let img = document.createElement("img");
+                        img.style=`
+                width: 100%;
+                height: auto;
+                position:absolute;
+                left:0;
+                top:0;
+                z-index: 0;
+                `;
+                        img.src = imgBack;
+                        cardContainer.appendChild(img);
+                    }
+                    if(imgBefore){
+                        // 创建 img 元素
+                        let img = document.createElement("img");
+                        img.style=`
+                width: 100%;
+                height: auto;
+                position:relative;
+                z-index: 2;
+                `;
+                        img.src = imgBefore;
+                        cardContainer.appendChild(img);
+                    }
+                    if(videoSrc){
+                        // 创建 video 元素
+                        let video = document.createElement("video");
+                        video.style=`
+                width: 100%;
+                height: auto;
+                position: absolute;
+                top:0;
+                left:0;
+                z-index: 1;
+                background: transparent;
+                `;
+                        video.loop = true;
+                        video.muted = true;
+                        video.autoplay = true;
+                        video.src = videoSrc;
+                        cardContainer.appendChild(video);
+                    }
+
+                    let media = sport.parentNode.querySelector('p[sport-card]~.media') || sport.parentNode.parentNode.querySelector('.media')
+                    if(media){
+                        media.style.display = 'none'
+                    }
+                    sport.style.display = 'none'
+                    // 在 sport 元素之后插入 cardContainer，并隐藏 sport
+                    sport.insertAdjacentElement("afterend", cardContainer);
+                    cardContainer.addEventListener('click', (e) => {
+                        if(repost_text||/^sinaweibo:\/\/repost/.test(target_url)){
+                            let retweetBtnA = closestCardParent.querySelector('.card-act li:first-child a')
+                            if(retweetBtnA){
+                                retweetBtnA.click()
+                                retweetBtnA.addEventListener('click', () => {
+                                    setTimeout(() => {
+                                        let textarea = document.querySelector('.card-sender [node-type=toMicroblog_client] .input textarea')
+                                        textarea.value = repost_text
+                                        textarea.focus()
+                                    })
+                                })
+                            }
+                            let textarea = document.querySelector('.card-sender [node-type=toMicroblog_client] .input textarea')
+                            textarea.value = repost_text
+                            textarea.focus()
+                        }else {
+                            window.open(target_url)
+                        }
+                    })
+                } catch (e) {
+                    console.log(e);
+                }
+            });
+        }
+        changeCardToSportCards(sportCards)
+        changeCardToSportCards(sportCardsRetweet)
+    });
+</script>
+
+<script>
+
+
+  Vue.prototype.$bus = new Vue()
+  Vue.prototype.$Bus = new Vue()
+  axios.defaults.headers.common['X-Requested-With'] = 'XMLHttpRequest';
+  axios.interceptors.request.use(config => {
+      // 判断是否为需要添加前缀的路径(主要用于主站组件)
+      const mainPCUrls = [
+          '/ajax/common/getCopyright'
+      ];
+      if (mainPCUrls.indexOf(config.url) >=0 ) {
+          config.url = 'https://weibo.com' + config.url;
+      }
+      return config;
+  }, error => {
+      return Promise.reject(error);
+  });
+
+  Vue.prototype.$http = axios;
+
+  Vue.use(VueRouter);
+  axios.defaults.withCredentials = true;
+  Vue.use(window['weibo-top-nav'].default)
+  var cururl = '7788585077' == ''?'':'/u/7788585077';
+    var app1 = new Vue({
+        el: '#searchapps',
+        data() {
+            return {
+                topData:[{
+                    name: "tv",
+                    link: "//weibo.com/tv"
+                }, {
+                    name: "home",
+                    link: "//weibo.com"
+                }, {
+                    name: "messages",
+                    link: "//weibo.com/at/weibo"
+                }, {
+                    name: "profile",
+                    link: "//weibo.com"+cururl
+                }, {
+                    name: "hot",
+                    link: "//weibo.com/hot"
+                }]
+            }
+        },
+        components: {
+            WooUI:window['wooui'],
+            //weiboTopNav:window['weibo-top-nav'].default
+        },
+        methods: {
+            publish() {
+              location.href= 'https://weibo.com/'
+            },
+        },
+        router:new VueRouter({
+            mode : 'history',
+            base: '',
+            routes: []
+        })
+
+    })
+    var app2 = new Vue({
+        el: '#pl_feedlist_index',
+        data() {
+            return {
+            }
+        },
+        created() {
+            //console.log('pl_feedlist_index app created')
+        },
+        components: {
+            VideoPlayer:window['weibo-video-player'].VideoPlayer,
+            WbVideo:window['weibo-video-player'].WbVideo,
+        },
+        methods: {
+            onPlayerPlay(player) {
+              var curvideos = document.querySelectorAll("video");
+              [].forEach.call(curvideos,
+                function(video) {
+                    if (video.getAttribute('id')!= (player.id_+'_html5_api')) {
+                        video.pause()
+                    } else {
+                        var t = localStorage.getItem("V7_PLAYER_VOLUME") || .5;
+                        video.volume = t;
+                    }
+                })
+            },
+            mountedPayer(player){
+                player.on("volumechange", (t)=>{
+                    var e, player = null === t || void 0 === t || null === (e = t.target) || void 0 === e ? void 0 : e.player, a = player && player.volume().toFixed(2) || .5;
+                    localStorage.setItem("V7_PLAYER_VOLUME", a);
+                })
+            },
+            copyurl(url) {
+                var e = document.createElement("input");
+                document.body.appendChild(e);
+                e.setAttribute("value", url);
+                e.select();
+                if(document.execCommand("copy")){
+                    document.execCommand("copy");
+                    this.$_w_toast({
+                        type: 'success',
+                        message: '复制成功'
+                    });
+                }
+                document.body.removeChild(e)
+
+            }
+        }
+
+    })
+    var app3 = new Vue({
+        el: '#pl_right_msg',
+        data() {
+            return {
+                isshowrule:false
+            }
+        },
+        created(){
+            window.addEventListener('click', function (e) {
+                if(e.target.id == 'ai_rule_close_btn'){
+                    document.getElementById('ai_rule_layer').style.display = 'none';
+                }
+            });
+        },
+        components: {
+            WooUI:window['wooui'],
+            weiboCopyright:window['weibo-copyright'].default
+        },
+        methods: {
+            showairule(val){
+                document.getElementById('ai_rule_layer').style.display = 'block';
+            }
+        },
+        beforeDestroy() {
+        }
+
+    })
+    var app4 = new Vue({
+        el: '#pl_feed_content_main',
+        data() {
+            return {
+            }
+        },
+        components: {
+            WooUI:window['wooui']
+        },
+        methods: {
+
+        }
+
+    })
+
+  // 热搜榜模块
+  let appHotBand = new Vue({
+      template: `
+          <div class="hot-band-container" id="hot-band-container">
+            <div class="hot-band-header">
+              <div class="hot-band-header-title">微博热搜</div>
+              <div class="hot-band-header-refresh" @click="refresh()">
+                <img src="https://simg.s.weibo.com/imgtool/20240715_vv%402x.png" alt=""><span>刷新</span>
+              </div>
+            </div>
+            <div class="hot-band-tabs">
+              <div class="hot-band-tabs-item">
+                <div :class="[{'hot-band-tabs-item-active': activeTab === 'recommend'}]"
+                     @click="changeTab('recommend')">我的
+                </div>
+                <div :class="[{'hot-band-tabs-item-active': activeTab === 'realtimehot'}]"
+                     @click="changeTab('realtimehot')">热搜
+                </div>
+              </div>
+              <div v-for="tabName in ['recommend', 'realtimehot']" :key="tabName" class="hot-band-tabs-list" v-show="activeTab === tabName">
+                <div v-for="(item, index) in hotBandMap[tabName].list" :key="index">
+                  <div class="hot-band-tabs-list-item" @click="go(item)" :action-type="item._action_type" :word="item.word" :suda-data="item.suda_data" :url2_show="item.url2_show||''" :url_show="item.url_show||''" :url_click="item.url_click||''" :url2_click="item.url2_click||''">
+                    <div class="hot-band-tabs-list-item-content">
+                      <div class="hot-band-tabs-list-item-dot" v-if="item.dot_icon === 1"></div>
+                      <div class="hot-band-tabs-list-item-top" v-else-if="item._top === 1"></div>
+                      <div class="hot-band-tabs-list-item-num" v-else>
+                        <div :class="{'hot-band-tabs-list-item-num-rank': item.show_idx < 4}">{{ item.show_idx }}</div>
+                      </div>
+                      <div class="hot-band-tabs-list-item-content-title" :title="item.word">{{ item.word }}</div>
+                      <img class="hot-band-tabs-list-item-content-emoticon" v-show="item.emoticon_url" :src="item.emoticon_url" />
+                      <div class="hot-band-tabs-list-item-content-desc" v-show="item.description">{{ item.description }}</div>
+                    </div>
+                    <div v-if="item.icon" class="hot-band-tabs-list-item-content-icon">
+                      <img :src="item.icon" />
+                    </div>
+                    <div class="hot-band-tabs-list-item-content-icon-html" v-else-if="item.small_icon_info"
+                         v-html="item.small_icon_info"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <a class="hot-band-footer-link" :href="hotBandMap[activeTab].link"
+               target="_blank" rel="noopener"><span>查看完整热搜榜单</span>
+              <div class="wbpro-iconbed woo-box-flex woo-box-alignCenter woo-box-justifyCenter"><i
+                  class="woo-font woo-font--angleRight"></i></div>
+            </a>
+          </div>
+        `,
+      data() {
+          return {
+              activeTab: 'recommend',
+              hotBandMap: {
+                  recommend: {
+                      list: [],
+                      action_type: 'recommend_ad',
+                      link: '/top/summary?click_from=index_rank_more&cate=recommend'
+                  },
+                  realtimehot: {
+                      list: [],
+                      action_type: 'realtimehot_ad',
+                      link: '/top/summary?click_from=index_rank_more&cate=realtimehot'
+                  }
+              }
+          }
+      },
+      created() {
+          // recommend 换成 0， realtimehot 换成 1
+          this.activeTab = document.getElementById('hotBand').getAttribute('data-activeTab') === '1' ? 'realtimehot': 'recommend';
+          this.getData()
+      },
+      components: {},
+      // delimiters: `[[]]`,
+      methods: {
+          getData() {
+              this.$http.get('/ajax_Indexband/getIndexBand', {
+                  params: {
+                      type: this.activeTab == 'realtimehot'? 1:0
+                  }
+              }).then(res => {
+                  if(res.status === 200&&res.data.code == 100000) {
+                      let data = res.data.data
+                      let list = this.activeTab === 'realtimehot'&&Array.isArray(data.hotgovs)?[...data.hotgovs.map(it => {
+                          it._top = 1
+                          return it
+                      }),...data.list]:data.list
+                      list.forEach(it => {
+                          if(it.is_ad == 1) {
+                              const params = new URLSearchParams(location.search);
+                              //console.log('==q', params.get('q'))
+
+                              it.suda_data = it.suda_data.replace('|q:|', `|q:${params.q}|`)
+                              it._action_type = this.hotBandMap[this.activeTab].action_type
+                          }else{
+                              it.suda_data = ''
+                          }
+                      })
+                      this.hotBandMap[this.activeTab].list = list
+                      this.$nextTick(() => {
+                          this.initPageRecord()
+                          this.rightsticky()
+                      })
+                  }
+              })
+          },
+          changeTab(tab) {
+              this.activeTab = tab;
+              if(this.hotBandMap[this.activeTab].list.length === 0) {
+                  this.getData()
+              }
+          },
+          refresh() {
+              this.getData()
+          },
+          initPageRecord() {
+              var c = document.querySelectorAll(`#hot-band-container [action-type="${this.hotBandMap[this.activeTab].action_type}"]`);
+              if (c.length) {
+                  for (var d = 0; d < c.length; d++) {
+                      var e = {};
+                      e.word = c[d].getAttribute("word");
+                      e.url_show = c[d].getAttribute("url_show");
+                      e.url2_show = c[d].getAttribute("url2_show");
+                      if (e.url_show) {
+                          var f = new Image;
+                          f.src = decodeURIComponent(e.url_show).replace("__REQUESTID__", "s_bandright_show" + +(new Date)).replace("[timestamp]", +(new Date))
+                      }
+                      if (e.url2_show) {
+                          var g = new Image;
+                          g.src = decodeURIComponent(e.url2_show).replace("__REQUESTID__", "s_bandright_show" + +(new Date)).replace("[timestamp]", +(new Date))
+                      }
+                  }
+              }
+          },
+          go(item) {
+              if (item.search_url) {
+                  function urlStr(url){
+                      return decodeURIComponent(url).replace("__REQUESTID__", "s_bandright_click" + +(new Date)).replace("[timestamp]", +(new Date))
+                  }
+                  this.trick(urlStr(item.url_click))
+                  this.trick(urlStr(item.url2_click))
+                  setTimeout(() => {
+                      location.href = item.search_url
+                  }, 0)
+              }
+          },
+          trick(url, fn = () => {}) {
+              if(url){
+                  const img = new Image()
+                  img.src = url
+                  img.onload = fn
+                  img.onerror = fn
+              }
+          },
+          rightsticky() {
+              var firstFeedItem = document.querySelector('div[id="pl_right_side"]')
+              if(firstFeedItem){
+                  var height = firstFeedItem.offsetHeight,winheight = document.documentElement.clientHeight
+                  var top1 = (height-winheight)>0?(height-winheight):0;
+                  firstFeedItem.style.cssText = "position:sticky;z-index:2;top:-"+top1+'px';
+              }
+          }
+      }
+  })
+  appHotBand.$mount('#hotBand')
+
+</script>
+
+
+</html>

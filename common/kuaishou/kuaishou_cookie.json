@@ -1,0 +1,15 @@
+{
+  "cookie_dict": {
+    "kwssectoken": "jaYJWqDEQb9ZmaRR6blQO8k03icTWqSffpdFMJZeU6SxN0pjlcrk7driFFQT8jeCzKIIHY8gWJdaBBb39/Y8Kw==",
+    "kwscode": "346366ae5929c53fbea5dfbc973cd91ff54d9d87d4f7275af2c0d9971cececea",
+    "kpn": "KUAISHOU_VISION",
+    "did": "web_024450b0f4b1b0b1fe587e632fb5aebd",
+    "clientid": "3",
+    "kwfv1": "PnGU+9+Y8008S+nH0U+0mjPf8fP08f+98f+nLlwnrIP9Ph8fPAPnLA8fGh80D9G0P7+0Dl80pY+0cM+nPAP/rlwebSwBLU+BPU+0q9G/rE80GFwB+08eZhPBHUG9G7GAmS+AcA80r7+f8D+eDU8nPlG/HUGfzD8/W7wBHI+fLMG/D=",
+    "kwpsecproductname": "kuaishou-vision",
+    "kpf": "PC_WEB"
+  },
+  "cookie_str": "kwssectoken=jaYJWqDEQb9ZmaRR6blQO8k03icTWqSffpdFMJZeU6SxN0pjlcrk7driFFQT8jeCzKIIHY8gWJdaBBb39/Y8Kw==; kwscode=346366ae5929c53fbea5dfbc973cd91ff54d9d87d4f7275af2c0d9971cececea; kpn=KUAISHOU_VISION; did=web_024450b0f4b1b0b1fe587e632fb5aebd; clientid=3; kwfv1=PnGU+9+Y8008S+nH0U+0mjPf8fP08f+98f+nLlwnrIP9Ph8fPAPnLA8fGh80D9G0P7+0Dl80pY+0cM+nPAP/rlwebSwBLU+BPU+0q9G/rE80GFwB+08eZhPBHUG9G7GAmS+AcA80r7+f8D+eDU8nPlG/HUGfzD8/W7wBHI+fLMG/D=; kwpsecproductname=kuaishou-vision; kpf=PC_WEB",
+  "update_time": 1765430261.2232215,
+  "target_url": "https://www.kuaishou.com/brilliant"
+}

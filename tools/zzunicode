@@ -1,0 +1,11 @@
+from urllib.parse import unquote, quote
+
+# 1. 解码（把%编码串还原成中文）
+encoded_str = "%E9%99%88%E6%99%93%E9%99%88%E5%A6%8D%E5%B8%8C%20%E9%A1%B6%E5%B3%B0%E7%9B%B8%E8%A7%81"
+decoded_str = unquote(encoded_str)
+print("解码结果：", decoded_str)  # 输出：#因仅退款损失9万商家回应地域歧视#
+
+# 2. 编码（把中文转成%编码串）
+original_str = "#因仅退款损失9万商家回应地域歧视#"
+encoded_str2 = quote(original_str, encoding='utf-8')
+print("编码结果：", encoded_str2)  # 输出和例子中一致的%编码串
