@@ -9,6 +9,7 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '.
 
 # 从 rdata.redis_client 导入保存函数
 from common.rdata.redis_client import save_hot_search_to_redis
+from common.mdata.mysql_client import save_hot_search_list
 
 url = "https://s.weibo.com/top/summary"
 
@@ -76,7 +77,8 @@ for index, tr in enumerate(items[1:], start=1): # 从1开始计数，作为排�
         'url': link,
         'hot_count': hot_count,
         'tag': tag,
-        'first_crawled': time.time()
+        'first_crawled': time.time(),
+        'source': 'weibo'
     }
 
     hot_searches.append(hot_search_item)
@@ -84,8 +86,14 @@ for index, tr in enumerate(items[1:], start=1): # 从1开始计数，作为排�
     # 打印单条结果（可选）
     print(f"{index}. {title} [{tag}] (热度: {hot_count}) - {link}")
 
-    # 新增：调用 Redis 存储函数保存热搜
+    # 保存：调用 Redis 存储函数保存热搜（内部也会备份到 MySQL）
     try:
         save_hot_search_to_redis(hot_search_item)
     except Exception as e:
         print(f"保存到 Redis 失败: {e}")
+
+# 批量备份一次（作为冗余）
+try:
+    save_hot_search_list(hot_searches)
+except Exception as e:
+    print(f"批量保存到 MySQL 失败: {e}")
