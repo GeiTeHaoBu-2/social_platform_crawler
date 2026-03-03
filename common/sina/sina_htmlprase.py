@@ -3,6 +3,9 @@ from bs4 import BeautifulSoup
 import time
 import os
 import sys
+import json
+import hashlib
+import logging
 
 # 将工程根目录加入模块搜索路径，以便 import common.rdata.redis_client
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..')))
@@ -11,12 +14,19 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '.
 from common.rdata.redis_client import save_hot_search_to_redis
 from common.mdata.mysql_client import save_hot_search_list
 
+# 尝试导入 Kafka 发送函数（可降级）
+try:
+    from common.tools.kafka_producer import send_hot_search
+except Exception:
+    send_hot_search = None
+    logging.getLogger(__name__).warning("Kafka producer not available; messages won't be sent to Kafka")
+
 url = "https://s.weibo.com/top/summary"
 
 # 请求头（需替换为自己的Cookie，从浏览器F12抓包获取）
 headers = {
     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-    "Cookie": "PC_TOKEN=c6d5692d12; ALF=02_1769593751; SCF=Ajn0diikk2WYz_4OlN61z6NE471qVTDPHB3-9ylg7mOGIR4O1WbygPxIAm046YdPKXBE2vCjse4uEwNu1GecQF4.; SUB=_2A25EVj7HDeRhGeFJ41oU-CvMzDuIHXVnKj4PrDV8PUJbkNB-LUr8kW1NfvAsCpo7_SrJp5WWLR6tguqkNVoCz2kP; SUBP=0033WrSXqPxfM725Ws9jqgMF55529P9D9WFm2BdFQxr7PVATg3GWDoyy5NHD95QNS0nRSKnfehMNWs4Dqc_ei--ciK.fi-z7i--Ri-88i-2pi--4iK.4i-2Ei--Xi-isi-2pi--Ni-88i-2peKzEeEH8SC-4eFHFSFH8SEHFBCHWBCH81FHFxCHFe5tt; _s_tentry=-; Apache=5943957075602.887.1767002130326; SINAGLOBAL=5943957075602.887.1767002130326; ULV=1767002130330:1:1:1:5943957075602.887.1767002130326:",
+    "Cookie": "SCF=Ajn0diikk2WYz_4OlN61z6NE471qVTDPHB3-9ylg7mOGIR4O1WbygPxIAm046YdPKXBE2vCjse4uEwNu1GecQF4.; SINAGLOBAL=5943957075602.887.1767002130326; ALF=1771259618; SUB=_2A25Eb8myDeRhGeFJ41oU-CvMzDuIHXVnBUN6rDV8PUJbkNAbLVOjkW1NfvAsCiEPAHpxVWRIAoVHhfIsAQagyAcR; SUBP=0033WrSXqPxfM725Ws9jqgMF55529P9D9WFm2BdFQxr7PVATg3GWDoyy5JpX5KMhUgL.FoMN1hnf1h-7S0M2dJLoIX7LxKqL1K-LBo5LxKnLB--LBK2LxK.L1K.LBKzLxKBLB.qLBK2LxKMLB--LBK2peoz0i--fiK.7i-zXi--Ni-iWi-8Wi--Ri-i8i-z7; _s_tentry=-; Apache=2706200113063.9146.1768767210379; ULV=1768767210382:4:1:1:2706200113063.9146.1768767210379:1767182589633",
     "Referer": "https://weibo.com/",
     "X-Requested-With": "XMLHttpRequest"
 }
@@ -84,13 +94,22 @@ for index, tr in enumerate(items[1:], start=1): # 从1开始计数，作为排�
     hot_searches.append(hot_search_item)
 
     # 打印单条结果（可选）
-    print(f"{index}. {title} [{tag}] (热度: {hot_count}) - {link}")
+    logging.getLogger(__name__).info(f"{index}. {title} [{tag}] (热度: {hot_count}) - {link}")
 
     # 保存：调用 Redis 存储函数保存热搜（内部也会备份到 MySQL）
     try:
         save_hot_search_to_redis(hot_search_item)
     except Exception as e:
-        print(f"保存到 Redis 失败: {e}")
+        logging.getLogger(__name__).exception(f"保存到 Redis 失败: {e}")
+
+    # 发送到 Kafka（如果可用）
+    try:
+        if send_hot_search:
+            send_hot_search(hot_search_item)
+        else:
+            logging.getLogger(__name__).warning("Kafka producer 未配置，跳过发送")
+    except Exception as e:
+        logging.getLogger(__name__).exception(f"发送到 Kafka 失败: {e}")
 
 # 批量备份一次（作为冗余）
 try:
