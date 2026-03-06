@@ -1,0 +1,36 @@
+-- 创建并切换数据库
+CREATE DATABASE IF NOT EXISTS `social_platforms_analysis`
+DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+USE `social_platforms_analysis`;
+
+-- =======================================================
+-- 1. 当前热搜表 (只存最新的一波数据，前端大屏直接查它)
+-- =======================================================
+CREATE TABLE IF NOT EXISTS `current_hot_search` (
+  `id` bigint(20) NOT NULL AUTO_INCREMENT COMMENT '主键ID',
+  `rank_position` int(11) NOT NULL COMMENT '当前排名',
+  `title` varchar(128) NOT NULL COMMENT '热搜标题',
+  `url` varchar(512) DEFAULT NULL COMMENT '热搜链接',
+  `heat` bigint(20) NOT NULL COMMENT '热度值',
+  `latest_crawl_time` datetime NOT NULL COMMENT '最新爬取时间',
+  `first_on_board_time` datetime NOT NULL COMMENT '初次上榜时间',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_title` (`title`) COMMENT '标题唯一索引，用于并发时的覆盖更新'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='当前最新热搜快照表(仅维持当前榜单)';
+
+-- =======================================================
+-- 2. 历史所有热搜表 (只增不减的流水账，供 Flink 和算法做趋势分析)
+-- =======================================================
+CREATE TABLE IF NOT EXISTS `history_hot_search` (
+  `id` bigint(20) NOT NULL AUTO_INCREMENT COMMENT '主键ID',
+  `rank_position` int(11) NOT NULL COMMENT '当时排名',
+  `title` varchar(128) NOT NULL COMMENT '热搜标题',
+  `url` varchar(512) DEFAULT NULL COMMENT '热搜链接',
+  `heat` bigint(20) NOT NULL COMMENT '当时热度值',
+  `latest_crawl_time` datetime NOT NULL COMMENT '爬取时间(切片时间)',
+  `first_on_board_time` datetime NOT NULL COMMENT '初次上榜时间',
+  PRIMARY KEY (`id`),
+  KEY `idx_title` (`title`) COMMENT '加速按话题查询历史走势',
+  KEY `idx_crawl_time` (`latest_crawl_time`) COMMENT '加速按时间段拉取数据'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='历史全量热搜流水表(追加写入)';

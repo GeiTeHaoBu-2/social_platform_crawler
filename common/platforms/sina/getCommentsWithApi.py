@@ -8,6 +8,8 @@ import csv
 import os
 import re  # 用于清理HTML标签
 
+#利用api爬取评论
+
 # 连接MongoDB（若不需要可注释）
 client = pymongo.MongoClient('localhost', 27017)
 weibo = client['weibo']

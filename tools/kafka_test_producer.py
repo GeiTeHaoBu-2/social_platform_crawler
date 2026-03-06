@@ -1,7 +1,7 @@
 """简单脚本：用于测试 Kafka Producer 是否能发送消息到指定 topic。"""
 import time
 import logging
-from common.tools.kafka_producer import send_hot_search
+from common.transmit.kafka_producer import send_hot_search
 
 logging.basicConfig(level=logging.INFO)
 

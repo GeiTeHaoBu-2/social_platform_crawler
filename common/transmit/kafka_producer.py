@@ -44,7 +44,6 @@ def send_hot_search(hot_search: dict) -> None:
 
     hot_search 会自动补充 `id` 字段（md5(title + source)）用于作为 key。
     """
-    print("xxxxxxxxxxxxxx1")
 
     if not _has_kafka or producer is None:
         logger.warning("Kafka not available, skipping send of hot_search: %s", hot_search.get('title'))
@@ -54,15 +53,37 @@ def send_hot_search(hot_search: dict) -> None:
     if 'id' not in hot_search or not hot_search.get('id'):
         hot_search['id'] = _make_id(hot_search.get('title', ''), hot_search.get('source', 'weibo'))
 
-    print("xxxxxxxxxxxxxx2")
 
 
     key = hot_search['id']
     try:
-        print("xxxxxxxxxxxxxx")
         producer.send(TOPIC, key=key, value=hot_search)
         producer.flush(timeout=5)
         logger.info(f"Sent hot_search id={key} to topic={TOPIC}")
     except Exception as e:
         logger.exception("Failed to send hot_search to Kafka: %s", e)
         raise
+
+# Kafka 生产者模块
+from kafka import KafkaProducer
+import json
+
+class KafkaProducerWrapper:
+    def __init__(self, kafka_servers):
+        """
+        初始化 Kafka 生产者。
+        :param kafka_servers: Kafka 服务器地址列表
+        """
+        self.producer = KafkaProducer(
+            bootstrap_servers=kafka_servers,
+            value_serializer=lambda v: json.dumps(v).encode('utf-8')
+        )
+
+    def send(self, topic, message):
+        """
+        发送消息到指定的 Kafka Topic。
+        :param topic: Kafka Topic 名称
+        :param message: 要发送的消息（字典格式）
+        """
+        self.producer.send(topic, message)
+        self.producer.flush()
