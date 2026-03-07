@@ -12,7 +12,7 @@ try:
     redis_pool = redis.ConnectionPool(
         host=REDIS_CONFIG.get('host', '127.0.0.1'),
         port=REDIS_CONFIG.get('port', 6379),
-        db=REDIS_CONFIG.get('db', 0),
+        db=REDIS_CONFIG.get('data_db', 0),
         password=REDIS_CONFIG.get('password', None),
         decode_responses=True
     )

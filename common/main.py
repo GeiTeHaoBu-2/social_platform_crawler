@@ -6,6 +6,7 @@ from common.process.deduplicationer import Deduplicationer
 from common.storage.mysql_client import MySQLClient
 from common.transmit.kafka_producer import KafkaProducerWrapper
 from common.config.settings import KAFKA_CONFIG
+from common.config.settings import CRAWLER_CONFIG
 from common.utils.logging_config import logger
 from common.storage.redis_client import save_hot_search_to_redis
 
@@ -69,7 +70,7 @@ if __name__ == "__main__":
     try:
         while True:
             hotSearchCrawler()
-            sleep(10)  # 每分钟执行一次
+            sleep(CRAWLER_CONFIG['gap_time'])  # 每分钟执行一次
     finally:
         # 保证程序退出时关闭连接
         weibo_mysql_client.close()

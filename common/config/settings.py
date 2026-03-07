@@ -1,5 +1,8 @@
 # 存放所有外部依赖的配置
 
+CRAWLER_CONFIG = {
+    'gap_time': 30
+}
 
 #把 localhost 换成 127.0.0.1，这在很多操作系统的底层网络解析中速度更快，且不易报 socket 错误。
 REDIS_CONFIG = {
