@@ -4,7 +4,7 @@ CRAWLER_CONFIG = {
     'gap_time': 30
 }
 
-#把 localhost 换成 127.0.0.1，这在很多操作系统的底层网络解析中速度更快，且不易报 socket 错误。
+# 把 localhost 换成 127.0.0.1，这在很多操作系统的底层网络解析中速度更快，且不易报 socket 错误。
 REDIS_CONFIG = {
     'host': '127.0.0.1',
     'port': 6379,
@@ -12,34 +12,30 @@ REDIS_CONFIG = {
     'deduplication_db': 1,
     'password': '',  # 没有密码保持为空
 
-    # 【新增】：多平台 Key 命名空间映射
+    # 【多平台 Key 命名空间映射】
     'keys': {
         'weibo': 'platform:weibo:realtime_board',
         'zhihu': 'platform:zhihu:realtime_board',
         'baidu': 'platform:baidu:realtime_board'
     },
 
-    # 【新增】：缓存过期时间（秒），默认 10 分钟
+    # 【缓存过期时间（秒）】，默认 10 分钟
     'expire_time': 600
 }
 
+# 【极简版数据库配置】
+# 移除了原有的 weibo_table 和 zhihu_table 映射。
+# 表名将由 mysql_client.py 内部通过传入的 platform 参数（如 'weibo'）动态推导出 weibo_base, weibo_trend 等。
 MYSQL_CONFIG = {
     'host': '127.0.0.1',
     'port': 3306,
     'user': 'root',
     'password': '',
     'database': 'social_platforms_analysis',
-    'charset': 'utf8mb4',
-    'weibo_table': {
-        'chs':'weibo_current_hot_search',
-        'hhs':'weibo_history_hot_search'
-    },
-    'zhihu_table': {
-        'chs': 'zhihu_current_hot_search',
-        'hhs': 'zhihu_history_hot_search'
-    }
+    'charset': 'utf8mb4'
 }
 
+# Kafka 配置 (这里的 topic 是指真正的消息队列 Topic，保持不变)
 KAFKA_CONFIG = {
     'servers': ['localhost:9092'],
     'topics': {
@@ -47,6 +43,7 @@ KAFKA_CONFIG = {
     }
 }
 
+# ================= 微博专属抓取配置 =================
 WEIBO_URL = "https://s.weibo.com/top/summary"
 WEIBO_HEADERS = {
     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",

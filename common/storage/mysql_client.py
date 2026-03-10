@@ -1,12 +1,14 @@
 import pymysql
+import hashlib
 from datetime import datetime
 
 from common.config.settings import MYSQL_CONFIG
 from common.models.item import HotSearchItem
 from common.utils.logging_config import logger
 
+
 class MySQLClient:
-    def __init__(self,platform: str):
+    def __init__(self, platform: str):
         """
         初始化 MySQL 客户端，自动读取配置并绑定表名。
         """
@@ -21,84 +23,110 @@ class MySQLClient:
                 autocommit=True
             )
 
-            # 【核心修改】：在初始化时，将配置里的表名缓存为实例属性
-            self.table_current = MYSQL_CONFIG[platform]['chs']
-            self.table_history = MYSQL_CONFIG[platform]['hhs']
+            self.platform = platform
+            # 【核心修改】：自动推导新架构下的三张基础表名 (不含 Flink 写入的两张分析表)
+            # 例如平台传入 'weibo'，则表名为 'weibo_base', 'weibo_trend', 'weibo_current'
+            self.table_base = f"{platform}_base"
+            self.table_trend = f"{platform}_trend"
+            self.table_current = f"{platform}_current"
 
-            logger.info(f"MySQL 连接成功！当前目标表: {self.table_current}, {self.table_history}")
+            logger.info(f"MySQL 连接成功！目标核心表: {self.table_base}, {self.table_trend}, {self.table_current}")
         except Exception as e:
             logger.error(f"MySQL 连接失败: {e}")
             raise
 
-    def save_to_history(self, items: list[HotSearchItem]):
+    def save_incremental_data(self, items: list[HotSearchItem]):
         """
-        【历史表策略】：只增不减 (Append-Only)
+        【历史双表写入策略】：
+        1. 基础表 (Base): 存在即忽略 (INSERT IGNORE)
+        2. 趋势流水表 (Trend): 无脑追加 (Append-Only)
         """
         if not items:
             return
 
-        # 使用 f-string 动态拼接表名，并加上反引号(``)防止 SQL 关键字冲突
-        sql = f"""
-            INSERT INTO `{self.table_history}` 
-            (rank_position, title, url, heat, latest_crawl_time, first_on_board_time)
-            VALUES (%s, %s, %s, %s, %s, %s)
+        # 准备数据：在存入数据库前，现场计算 MD5 生成 item_id
+        base_params = []
+        trend_params = []
+
+        for item in items:
+            # 现场生成脱离业务且无歧义的数据库主键：MD5(title)
+            item_id = hashlib.md5(item.title.encode('utf-8')).hexdigest()
+
+            # 组装 weibo_base 表数据
+            base_params.append((
+                item_id,
+                item.title,
+                item.url,
+                item.first_on_board_time
+            ))
+
+            # 组装 weibo_trend 表数据
+            trend_params.append((
+                item_id,
+                item.rank,
+                item.heat,
+                item.latest_crawl_time
+            ))
+
+        # 【SQL 1：基础表】使用 INSERT IGNORE
+        sql_base = f"""
+            INSERT IGNORE INTO `{self.table_base}` 
+            (item_id, title, url, first_time)
+            VALUES (%s, %s, %s, %s)
         """
-        params_list = self._prepare_params(items)
+
+        # 【SQL 2：趋势表】无脑插入
+        sql_trend = f"""
+            INSERT INTO `{self.table_trend}` 
+            (`item_id`, `rank_pos`, `heat`, `crawl_time`)
+            VALUES (%s, %s, %s, %s)
+        """
 
         try:
             with self.connection.cursor() as cursor:
-                cursor.executemany(sql, params_list)
-            logger.debug(f"成功追加 {len(items)} 条数据到 {self.table_history} 表")
+                # 执行双写
+                cursor.executemany(sql_base, base_params)
+                cursor.executemany(sql_trend, trend_params)
+
+            logger.debug(f"成功双写 {len(items)} 条增量数据到 {self.platform} 基础与趋势表。")
         except Exception as e:
-            logger.error(f"写入历史流水表失败: {e}")
+            logger.error(f"写入历史双表架构失败: {e}")
 
     def save_to_current(self, items: list[HotSearchItem]):
         """
-        【当前表策略】：暴力清空 + 全量插入 (Truncate & Insert)
+        【快照表策略】：暴力清空 + 全量插入 (Truncate & Insert)
+        作为 Redis 的物理级兜底备份。
         """
         if not items:
-            logger.warning("当前表写入操作收到空数据列表，跳过写入。")
             return
 
-        # 动态拼接表名
         truncate_sql = f"TRUNCATE TABLE `{self.table_current}`;"
+
         insert_sql = f"""
             INSERT INTO `{self.table_current}` 
-            (rank_position, title, url, heat, latest_crawl_time, first_on_board_time)
+            (`item_id`, `rank_pos`, `title`, `url`, `heat`, `crawl_time`)
             VALUES (%s, %s, %s, %s, %s, %s)
         """
-        params_list = self._prepare_params(items)
 
-        try:
-            with self.connection.cursor() as cursor:
-                # 第一步：物理级瞬间清空旧榜单
-                cursor.execute(truncate_sql)
-
-                # 第二步：毫无负担地顺序写入新榜单
-                cursor.executemany(insert_sql, params_list)
-
-            logger.debug(f"成功重置并写入了 {len(items)} 条数据到 {self.table_current} 表")
-        except Exception as e:
-            logger.error(f"重置当前快照表失败: {e}")
-
-    def _prepare_params(self, items: list[HotSearchItem]) -> list[tuple]:
-        """
-        将 Python 对象剥离成 MySQL 需要的元组格式，并转换时间戳。
-        """
         params = []
         for item in items:
-            dt_latest = datetime.fromtimestamp(item.latest_crawl_time)
-            dt_first = datetime.fromtimestamp(item.first_on_board_time)
-
+            item_id = hashlib.md5(item.title.encode('utf-8')).hexdigest()
             params.append((
+                item_id,
                 item.rank,
                 item.title,
                 item.url,
                 item.heat,
-                dt_latest,
-                dt_first
+                item.latest_crawl_time
             ))
-        return params
+
+        try:
+            with self.connection.cursor() as cursor:
+                cursor.execute(truncate_sql)
+                cursor.executemany(insert_sql, params)
+            logger.debug(f"容灾备份：已刷新 {len(items)} 条快照到 {self.table_current} 表")
+        except Exception as e:
+            logger.error(f"重置当前快照表失败: {e}")
 
     def close(self):
         """优雅关闭连接"""
@@ -106,17 +134,22 @@ class MySQLClient:
             self.connection.close()
             logger.info("MySQL 连接已断开。")
 
+
 if __name__ == '__main__':
-    # 简单测试连接和写入
-    client = MySQLClient()
+    # 简单测试写入
+    client = MySQLClient(platform='weibo')
     test_item = HotSearchItem(
         rank=1,
-        title="测试热搜",
-        url="https://example.com",
-        heat=999999,
+        title="科幻电影定档",
+        url="https://weibo.com/test",
+        heat=5000000,
         latest_crawl_time=int(datetime.now().timestamp()),
         first_on_board_time=int(datetime.now().timestamp())
     )
+
+    # 1. 测试写入容灾快照表
     client.save_to_current([test_item])
-    client.save_to_history([test_item])
+    # 2. 测试写入基础信息表和趋势流水表
+    client.save_incremental_data([test_item])
+
     client.close()

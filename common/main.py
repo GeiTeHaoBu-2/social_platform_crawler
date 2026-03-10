@@ -14,70 +14,72 @@ from common.storage.redis_client import save_hot_search_to_redis
 cleaner = Cleaner()
 deduplicationer = Deduplicationer()
 kafka_producer = KafkaProducerWrapper(KAFKA_CONFIG['servers'])
-weibo_mysql_client = MySQLClient('weibo_table')
+
+# 传入精准的平台标识 'weibo'，对接 MySQLClient 新版的三表推导逻辑 (base, trend, current)
+weibo_mysql_client = MySQLClient('weibo')
 
 
 def hotSearchCrawler():
     logger.info("======= 微博热搜监控流水线启动 =======")
 
-    # 1. 爬取原始数据 (得到的是 HotSearchItem 对象列表)
+    # 1. 爬取原始数据
     raw_data_items = get_realtime_data()
     if not raw_data_items:
         logger.warning("本次未抓取到数据，流水线中止。")
         return
     logger.info(f"1. 成功爬取到 {len(raw_data_items)} 条热搜对象")
 
-    # 2. 更新实时大屏快照 (Redis DB 0 & MySQL Current Table)
-    # 这两处是“覆盖式”更新，所以直接用 cleaned_items 全量覆盖
+    # 2. 数据清洗
+    cleaned_items = cleaner.clean(raw_data_items)
+    logger.info(f"2. 数据清洗完成，剩余 {len(cleaned_items)} 条有效数据")
+
+    # 3. 刷新实时大屏快照 (双重防线：Redis 高速内存 + MySQL 物理容灾)
     try:
-        # 刷新 Redis 大屏缓存 (DB 0)
-        save_hot_search_to_redis(raw_data_items, 'weibo')
-        # 刷新 MySQL 当前快照表 (Truncate & Insert)
-        weibo_mysql_client.save_to_current(raw_data_items)
-        logger.info("3. 实时快照已成功刷新至 Redis(DB 0) 和 MySQL(Current)")
+        # 第一防线：更新 Redis (极速)
+        save_hot_search_to_redis(cleaned_items, 'weibo')
+
+        # 第二防线：更新 MySQL 快照表 (容灾兜底)
+        weibo_mysql_client.save_to_current(cleaned_items)
+
+        logger.info("3. 实时快照已成功刷新至 Redis (高速) 和 MySQL (容灾兜底)")
     except Exception as e:
         logger.error(f"3. 快照更新失败: {e}")
 
-        # 2. 数据清洗 (过滤标题乱码、空格等)
-        cleaned_items = cleaner.clean(raw_data_items)
-        logger.info(f"2. 数据清洗完成，剩余 {len(cleaned_items)} 条有效数据")
-
     # 4. 增量比对 (核心：对比 Redis DB 1 中的长期记忆，计算状态差值)
-    # 这一步执行完后，cleaned_items 里的 item 会自动继承旧的 first_on_board_time
     unique_items = deduplicationer.deduplicate(cleaned_items, platform='weibo')
     logger.info(f"4. 增量比对完成：共发现 {len(unique_items)} 条 [新上榜/热度跃迁/排名变动] 数据")
 
     # 5. 持久化增量数据 & 发送消息队列
     if not unique_items:
-        logger.info("5. 本次抓取无实质性变动，跳过持久化与发送。")
+        logger.info("5. 本次抓取无实质性变动，跳过持久化与下发。")
         return
 
+    # 调用新版的历史双表写入方法
     try:
-        # 【重要】：只将“有变动”的数据追加到历史表，形成热度走势线
-        weibo_mysql_client.save_to_history(unique_items)
-        logger.info(f"5. 已将 {len(unique_items)} 条增量记录追加至 MySQL 历史表")
-
-        for item in unique_items:
-            # 将 title 作为 Key，保证 Flink 能精准追踪这根“走势线”
-            kafka_producer.send(
-                topic=KAFKA_CONFIG['topics']['weibo'],
-                message=item.to_dict(),
-                key=item.title  # 极其关键的一步！
-            )
-            logger.info(f"5. [推送 Kafka 成功] 增量数据: {item.title}")
-
-        # 如果你是单次脚本运行，可以在最后加一句 close
-        # kafka_producer.close()
-
+        weibo_mysql_client.save_incremental_data(unique_items)
+        logger.info(f"5. 已将 {len(unique_items)} 条增量记录精准写入 MySQL (基础表 + 趋势流水表)")
     except Exception as e:
-        logger.error(f"5. 增量下发流程出错: {e}")
+        logger.error(f"5. MySQL 历史双写流程出错: {e}")
 
+        # 6. 推送至 Kafka 供下游系统 (Flink 等) 计算或消费
+        try:
+            for item in unique_items:
+                # 直接把完整的标准化字典发出去，坚决不删减任何字段！
+                # 保障全系统、全链路的 JSON Schema (数据契约) 绝对一致
+                kafka_producer.send(
+                    topic=KAFKA_CONFIG['topics']['weibo'],
+                    message=item.to_dict(),
+                    key=item.title  # 依然保留 title 作为精准路由的 Key
+                )
+            logger.info(f"6. 成功将 {len(unique_items)} 条完整增量数据推送到 Kafka")
+        except Exception as e:
+            logger.error(f"6. 增量 Kafka 下发流程出错: {e}")
 
 if __name__ == "__main__":
     try:
         while True:
             hotSearchCrawler()
-            sleep(CRAWLER_CONFIG['gap_time'])  # 每分钟执行一次
+            sleep(CRAWLER_CONFIG['gap_time'])  # 默认每分钟执行一次
     finally:
-        # 保证程序退出时关闭连接
+        # 保证程序被手动强杀 (Ctrl+C) 时优雅关闭数据库连接
         weibo_mysql_client.close()

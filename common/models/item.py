@@ -24,11 +24,15 @@ class HotSearchItem:
 
     def to_dict(self):
         """
-        转换为字典格式，方便存入 Redis 或推入 Kafka。
-        值为 None 的字段会被自动过滤，不参与序列化（如 url 在清洗后被置为 None）。
+        转换为字典格式，方便存入 Redis 或 MySQL。
+
+        【架构备忘】：
+        1. 这里的 url 必须被完整保留并序列化，因为前端大屏(Redis)和历史底座(MySQL base表)强依赖它。
+        2. 若为了节省网络带宽，请在推入 Kafka 之前，在调用方(如 main.py)手动从生成的字典中剔除 'url' 字段。
+        3. 坚决保留值为 None 的字段（映射为 JSON 的 null），保证对外数据契约(Schema)的绝对严谨统一。
         :return: 字典格式的热搜条目
         """
-        raw = {
+        return {
             'rank': self.rank,
             'title': self.title,
             'url': self.url,
@@ -36,4 +40,3 @@ class HotSearchItem:
             'latest_crawl_time': self.latest_crawl_time,
             'first_on_board_time': self.first_on_board_time
         }
-        return {k: v for k, v in raw.items() if v is not None}
