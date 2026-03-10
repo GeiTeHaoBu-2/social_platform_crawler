@@ -1,0 +1,23 @@
+CREATE TABLE `weibo_hot_search_topic` (
+  `topic_id` VARCHAR(32) NOT NULL COMMENT '主键，md5(title + source)',
+  `title` VARCHAR(255) NOT NULL COMMENT '热搜标题',
+  `url` TEXT COMMENT '前端跳转链接',
+  `source` VARCHAR(50) NOT NULL DEFAULT 'weibo' COMMENT '数据来源平台',
+  `first_crawled_time` BIGINT NOT NULL COMMENT '初次上榜时间戳',
+  `create_time` TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '记录创建时间(数据库自动生成)',
+  PRIMARY KEY (`topic_id`),
+  -- 为 title 加上索引，方便后台管理系统做模糊搜索
+  INDEX `idx_title` (`title`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='热搜话题基础维度表';
+
+CREATE TABLE `weibo_hot_search_trend_log` (
+  `id` BIGINT AUTO_INCREMENT NOT NULL COMMENT '自增流水主键',
+  `topic_id` VARCHAR(32) NOT NULL COMMENT '外键，关联hot_search_topic表',
+  `rank` INT NOT NULL COMMENT '当前排名',
+  `heat` BIGINT NOT NULL COMMENT '当前热度值(部分话题热度可能极高，用BIGINT安全)',
+  `crawl_time` BIGINT NOT NULL COMMENT '本次抓取的时间戳',
+  `create_time` TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '流水写入时间(数据库自动生成)',
+  PRIMARY KEY (`id`),
+  -- 【核心性能优化】：联合索引！大屏画走势图时的查询速度全靠它！
+  INDEX `idx_topic_time` (`topic_id`, `crawl_time`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='热搜热度变化流水表';

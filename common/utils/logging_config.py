@@ -54,7 +54,6 @@ logger.addHandler(console_handler)
 logger.propagate = False
 
 if __name__ == '__main__':
-    # 你可以直接运行这个文件测试一下绚丽的效果！
     logger.debug('这是一条 DEBUG 级别的蓝色日志')
     logger.info('这是一条 INFO 级别的绿色日志')
     logger.warning('这是一条 WARNING 级别的黄色日志')

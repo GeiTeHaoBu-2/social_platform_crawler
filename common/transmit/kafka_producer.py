@@ -1,89 +1,61 @@
-import os
 import json
-import hashlib
 import logging
-
-# kafka-python: https://pypi.org/project/kafka-python/
-try:
-    from kafka import KafkaProducer
-    _has_kafka = True
-except Exception:
-    KafkaProducer = None
-    _has_kafka = False
-
-BOOTSTRAP = os.getenv('KAFKA_BOOTSTRAP_SERVERS', 'localhost:9092')
-TOPIC = os.getenv('KAFKA_TOPIC', 'weibo.hotsearch')
+from kafka import KafkaProducer
+from kafka.errors import KafkaError
 
 logger = logging.getLogger(__name__)
 
-producer = None
-if _has_kafka:
-    try:
-        producer = KafkaProducer(
-            bootstrap_servers=BOOTSTRAP.split(','),
-            value_serializer=lambda v: json.dumps(v, ensure_ascii=False).encode('utf-8'),
-            key_serializer=lambda k: k.encode('utf-8') if k is not None else None,
-            retries=5
-        )
-        logger.info(f"Kafka producer initialized for {BOOTSTRAP}")
-    except Exception as e:
-        logger.exception("Failed to initialize Kafka producer: %s", e)
-        # 额外打印到控制台，方便在没有配置 logging 时也能看到错误原因
-        print(f"Failed to initialize Kafka producer: {e}")
-        producer = None
-
-
-def _make_id(title: str, source: str = 'weibo') -> str:
-    raw = f"{title}_{source}"
-    return hashlib.md5(raw.encode('utf-8')).hexdigest()
-
-
-def send_hot_search(hot_search: dict) -> None:
-    """
-    发送热搜到 Kafka（若 Kafka 不可用则降级为记录日志）。
-
-    hot_search 会自动补充 `id` 字段（md5(title + source)）用于作为 key。
-    """
-
-    if not _has_kafka or producer is None:
-        logger.warning("Kafka not available, skipping send of hot_search: %s", hot_search.get('title'))
-        return
-
-    # 保障消息包含 id
-    if 'id' not in hot_search or not hot_search.get('id'):
-        hot_search['id'] = _make_id(hot_search.get('title', ''), hot_search.get('source', 'weibo'))
-
-
-
-    key = hot_search['id']
-    try:
-        producer.send(TOPIC, key=key, value=hot_search)
-        producer.flush(timeout=5)
-        logger.info(f"Sent hot_search id={key} to topic={TOPIC}")
-    except Exception as e:
-        logger.exception("Failed to send hot_search to Kafka: %s", e)
-        raise
-
-# Kafka 生产者模块
-from kafka import KafkaProducer
-import json
 
 class KafkaProducerWrapper:
     def __init__(self, kafka_servers):
         """
-        初始化 Kafka 生产者。
-        :param kafka_servers: Kafka 服务器地址列表
+        初始化具有容错机制的 Kafka 生产者
         """
-        self.producer = KafkaProducer(
-            bootstrap_servers=kafka_servers,
-            value_serializer=lambda v: json.dumps(v).encode('utf-8')
-        )
+        try:
+            # 如果配置传的是字符串(如 'localhost:9092')，转成列表
+            if isinstance(kafka_servers, str):
+                kafka_servers = kafka_servers.split(',')
 
-    def send(self, topic, message):
+            self.producer = KafkaProducer(
+                bootstrap_servers=kafka_servers,
+                # 1. 解决中文乱码，让 Kafka 里流淌的是纯正的中文字符
+                value_serializer=lambda v: json.dumps(v, ensure_ascii=False).encode('utf-8'),
+                # 2. 增加 Key 序列化器，保障相同 title 分发到相同 Flink Partition
+                key_serializer=lambda k: str(k).encode('utf-8') if k is not None else None,
+                # 3. 网络抖动时的自动重试次数
+                retries=3,
+                # 4. 权衡性能与安全：Leader 写入成功即返回
+                acks=1
+            )
+            logger.info(f"Kafka Producer 成功挂载至: {kafka_servers}")
+
+        except Exception as e:
+            logger.error(f"Kafka Producer 初始化彻底失败: {e}")
+            self.producer = None
+
+    def send(self, topic: str, message: dict, key: str = None):
         """
-        发送消息到指定的 Kafka Topic。
-        :param topic: Kafka Topic 名称
-        :param message: 要发送的消息（字典格式）
+        异步发送消息（绝不在内部调用 flush）
+        :param topic: 目标 Topic
+        :param message: 字典格式的消息体
+        :param key: 消息的唯一标识（强烈建议传入热搜的 title）
         """
-        self.producer.send(topic, message)
-        self.producer.flush()
+        if not self.producer:
+            logger.warning(f"Kafka 未就绪，丢弃消息: {message.get('title', 'Unknown')}")
+            return
+
+        try:
+            # 真正的异步发送，极其轻量、极速
+            self.producer.send(topic, key=key, value=message)
+        except KafkaError as e:
+            logger.error(f"发送 Kafka 消息失败，Topic={topic}, Error={e}")
+
+    def close(self):
+        """
+        优雅关机：只有在整个爬虫流水线结束（或进程退出）时，才调用一次 flush
+        将内存中最后一点没发完的数据推送到 Kafka
+        """
+        if self.producer:
+            logger.info("正在关闭 Kafka Producer，推送剩余消息...")
+            self.producer.flush()
+            self.producer.close()

@@ -27,20 +27,20 @@ def hotSearchCrawler():
         return
     logger.info(f"1. 成功爬取到 {len(raw_data_items)} 条热搜对象")
 
-    # 2. 数据清洗 (过滤标题乱码、空格等)
-    cleaned_items = cleaner.clean(raw_data_items)
-    logger.info(f"2. 数据清洗完成，剩余 {len(cleaned_items)} 条有效数据")
-
-    # 3. 更新实时大屏快照 (Redis DB 0 & MySQL Current Table)
+    # 2. 更新实时大屏快照 (Redis DB 0 & MySQL Current Table)
     # 这两处是“覆盖式”更新，所以直接用 cleaned_items 全量覆盖
     try:
         # 刷新 Redis 大屏缓存 (DB 0)
-        save_hot_search_to_redis(cleaned_items, 'weibo')
+        save_hot_search_to_redis(raw_data_items, 'weibo')
         # 刷新 MySQL 当前快照表 (Truncate & Insert)
-        weibo_mysql_client.save_to_current(cleaned_items)
+        weibo_mysql_client.save_to_current(raw_data_items)
         logger.info("3. 实时快照已成功刷新至 Redis(DB 0) 和 MySQL(Current)")
     except Exception as e:
         logger.error(f"3. 快照更新失败: {e}")
+
+        # 2. 数据清洗 (过滤标题乱码、空格等)
+        cleaned_items = cleaner.clean(raw_data_items)
+        logger.info(f"2. 数据清洗完成，剩余 {len(cleaned_items)} 条有效数据")
 
     # 4. 增量比对 (核心：对比 Redis DB 1 中的长期记忆，计算状态差值)
     # 这一步执行完后，cleaned_items 里的 item 会自动继承旧的 first_on_board_time
@@ -57,10 +57,17 @@ def hotSearchCrawler():
         weibo_mysql_client.save_to_history(unique_items)
         logger.info(f"5. 已将 {len(unique_items)} 条增量记录追加至 MySQL 历史表")
 
-        # 将增量推送到 Kafka 供 Flink 消费
-        #for item in unique_items:
-        #    kafka_producer.send(KAFKA_CONFIG['topics']['weibo'], item.to_dict())
-        #    logger.info(f"   [Kafka 发送成功] -> {item.title} (热度: {item.heat})")
+        for item in unique_items:
+            # 将 title 作为 Key，保证 Flink 能精准追踪这根“走势线”
+            kafka_producer.send(
+                topic=KAFKA_CONFIG['topics']['weibo'],
+                message=item.to_dict(),
+                key=item.title  # 极其关键的一步！
+            )
+            logger.info(f"5. [推送 Kafka 成功] 增量数据: {item.title}")
+
+        # 如果你是单次脚本运行，可以在最后加一句 close
+        # kafka_producer.close()
 
     except Exception as e:
         logger.error(f"5. 增量下发流程出错: {e}")

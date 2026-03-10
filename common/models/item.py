@@ -25,9 +25,10 @@ class HotSearchItem:
     def to_dict(self):
         """
         转换为字典格式，方便存入 Redis 或推入 Kafka。
+        值为 None 的字段会被自动过滤，不参与序列化（如 url 在清洗后被置为 None）。
         :return: 字典格式的热搜条目
         """
-        return {
+        raw = {
             'rank': self.rank,
             'title': self.title,
             'url': self.url,
@@ -35,3 +36,4 @@ class HotSearchItem:
             'latest_crawl_time': self.latest_crawl_time,
             'first_on_board_time': self.first_on_board_time
         }
+        return {k: v for k, v in raw.items() if v is not None}
