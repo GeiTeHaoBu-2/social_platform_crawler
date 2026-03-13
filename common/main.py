@@ -54,7 +54,7 @@ def hotSearchCrawler():
         logger.info("5. 本次抓取无实质性变动，跳过持久化与下发。")
         return
 
-    # 调用新版的历史双表写入方法
+    # 调用历史双表写入方法
     try:
         weibo_mysql_client.save_incremental_data(unique_items)
         logger.info(f"5. 已将 {len(unique_items)} 条增量记录精准写入 MySQL (基础表 + 趋势流水表)")
