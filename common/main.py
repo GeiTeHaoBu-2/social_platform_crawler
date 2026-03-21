@@ -61,19 +61,19 @@ def hotSearchCrawler():
     except Exception as e:
         logger.error(f"5. MySQL 历史双写流程出错: {e}")
 
-        # 6. 推送至 Kafka 供下游系统 (Flink 等) 计算或消费
-        try:
-            for item in unique_items:
-                # 直接把完整的标准化字典发出去，坚决不删减任何字段！
-                # 保障全系统、全链路的 JSON Schema (数据契约) 绝对一致
-                kafka_producer.send(
-                    topic=KAFKA_CONFIG['topics']['weibo'],
-                    message=item.to_dict(),
-                    key=item.title  # 依然保留 title 作为精准路由的 Key
-                )
-            logger.info(f"6. 成功将 {len(unique_items)} 条完整增量数据推送到 Kafka")
-        except Exception as e:
-            logger.error(f"6. 增量 Kafka 下发流程出错: {e}")
+    # 6. 推送至 Kafka 供下游系统 (Flink 等) 计算或消费
+    try:
+        for item in unique_items:
+            # 直接把完整的标准化字典发出去，坚决不删减任何字段！
+            # 保障全系统、全链路的 JSON Schema (数据契约) 绝对一致
+            kafka_producer.send(
+                 topic=KAFKA_CONFIG['topics']['weibo'],
+                message=item.to_dict(),
+                key=item.title  # 依然保留 title 作为精准路由的 Key
+            )
+        logger.info(f"6. 成功将 {len(unique_items)} 条完整增量数据推送到 Kafka")
+    except Exception as e:
+        logger.error(f"6. 增量 Kafka 下发流程出错: {e}")
 
 if __name__ == "__main__":
     try:

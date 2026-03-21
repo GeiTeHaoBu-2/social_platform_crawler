@@ -5,6 +5,7 @@ import json
 # 微博热搜API（需抓包确认最新接口）
 url = "https://weibo.com/ajax/side/hotSearch"
 
+# TODO: 这里之后需要加上代理池，防止 IP 被封
 # 请求头（需替换为自己的Cookie，从浏览器F12抓包获取）
 headers = {
     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
