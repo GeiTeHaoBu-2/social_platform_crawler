@@ -16,6 +16,12 @@
     - 所有热搜必须全量发送Kafka
 """
 
+import sys
+import os
+
+# 将项目根目录加入模块搜索路径
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+
 import time
 from typing import Dict, Any, List
 
@@ -64,14 +70,14 @@ class HotSearchPipeline:
         )
         
         # Step 4: 初始化Kafka生产者
-        kafka_servers = config.get('KAFKA', {}).get('BOOTSTRAP_SERVERS', ['localhost:9092'])
+        kafka_servers = config.get('KAFKA', {}).get('bootstrap_servers', ['localhost:9092'])
         if isinstance(kafka_servers, str):
             kafka_servers = kafka_servers.split(',')
         self.kafka_producer = KafkaProducerWrapper(kafka_servers)
         
         # Step 5: 获取配置值
-        self.kafka_topic = config.get('KAFKA', {}).get('TOPIC', 'weibo_raw')
-        self.sleep_seconds = config.get('CRAWLER', {}).get('SLEEP_SECONDS', 30)
+        self.kafka_topic = config.get('KAFKA', {}).get('topic', 'weibo_raw')
+        self.sleep_seconds = config.get('CRAWLER', {}).get('sleep_seconds', 30)
         
         # 标记运行状态
         self._running = False
@@ -111,10 +117,10 @@ class HotSearchPipeline:
         try:
             # 连接Redis
             redis_client = redis.Redis(
-                host=self.config.get('REDIS', {}).get('HOST', '127.0.0.1'),
-                port=self.config.get('REDIS', {}).get('PORT', 6379),
-                db=self.config.get('REDIS', {}).get('DB', 0),
-                password=self.config.get('REDIS', {}).get('PASSWORD', None),
+                host=self.config.get('REDIS', {}).get('host', '127.0.0.1'),
+                port=self.config.get('REDIS', {}).get('port', 6379),
+                db=self.config.get('REDIS', {}).get('db', 0),
+                password=self.config.get('REDIS', {}).get('password', None),
                 decode_responses=True
             )
             
@@ -251,28 +257,28 @@ class HotSearchPipeline:
 
 def main():
     """主入口函数"""
-    # 组装配置（解耦注入）
+    # 组装配置（解耦注入）- 使用小写键名与MySQLClient保持一致
     config = {
         "DB": {
-            "HOST": MYSQL_CONFIG.get('host', '127.0.0.1'),
-            "PORT": MYSQL_CONFIG.get('port', 3306),
-            "USER": MYSQL_CONFIG.get('user', 'root'),
-            "PASSWORD": MYSQL_CONFIG.get('password', ''),
-            "DB_NAME": MYSQL_CONFIG.get('database', 'social_platforms_analysis'),
-            "CHARSET": MYSQL_CONFIG.get('charset', 'utf8mb4')
+            "host": MYSQL_CONFIG.get('host', '127.0.0.1'),
+            "port": MYSQL_CONFIG.get('port', 3306),
+            "user": MYSQL_CONFIG.get('user', 'root'),
+            "password": MYSQL_CONFIG.get('password', ''),
+            "database": MYSQL_CONFIG.get('database', 'social_platforms_analysis'),
+            "charset": MYSQL_CONFIG.get('charset', 'utf8mb4')
         },
         "REDIS": {
-            "HOST": REDIS_CONFIG.get('host', '127.0.0.1'),
-            "PORT": REDIS_CONFIG.get('port', 6379),
-            "DB": REDIS_CONFIG.get('data_db', 0),
-            "PASSWORD": REDIS_CONFIG.get('password', '')
+            "host": REDIS_CONFIG.get('host', '127.0.0.1'),
+            "port": REDIS_CONFIG.get('port', 6379),
+            "db": REDIS_CONFIG.get('data_db', 0),
+            "password": REDIS_CONFIG.get('password', '')
         },
         "KAFKA": {
-            "BOOTSTRAP_SERVERS": KAFKA_CONFIG.get('servers', ['localhost:9092']),
-            "TOPIC": KAFKA_CONFIG.get('topics', {}).get('weibo', 'weibo_raw')
+            "bootstrap_servers": KAFKA_CONFIG.get('servers', ['localhost:9092']),
+            "topic": KAFKA_CONFIG.get('topics', {}).get('weibo', 'weibo_raw')
         },
         "CRAWLER": {
-            "SLEEP_SECONDS": CRAWLER_CONFIG.get('gap_time', 30)
+            "sleep_seconds": CRAWLER_CONFIG.get('gap_time', 30)
         }
     }
     

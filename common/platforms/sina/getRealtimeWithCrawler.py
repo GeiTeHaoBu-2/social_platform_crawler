@@ -91,5 +91,8 @@ def get_realtime_data() -> list[HotSearchItem]:
 
     return hot_searches
 
-get_realtime_data()
 
+if __name__ == '__main__':
+    # 仅在直接运行此文件时执行测试
+    result = get_realtime_data()
+    print(f"爬取到 {len(result)} 条热搜")
