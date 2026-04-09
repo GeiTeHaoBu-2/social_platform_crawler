@@ -198,19 +198,37 @@ class AsyncWriter:
     
     def _write_base_batch(self, items: List):
         """批量写入base表"""
+        if not items:
+            logger.warning("_write_base_batch: items为空列表")
+            return
+        
+        logger.debug(f"_write_base_batch: 准备写入 {len(items)} 条数据")
+        logger.debug(f"_write_base_batch: 第一条数据类型={type(items[0])}, 内容={items[0]}")
+        
         try:
             count = self.mysql_client.batch_write_base(items)
-            logger.debug(f"AsyncWriter批量写入 {count} 条到base表")
+            logger.info(f"AsyncWriter批量写入 {count} 条到base表")
         except Exception as e:
-            logger.error(f"AsyncWriter批量写入base表失败: {e}")
+            logger.error(f"AsyncWriter批量写入base表失败: {type(e).__name__}: {e}")
+            import traceback
+            logger.error(traceback.format_exc())
     
     def _write_analysis_batch(self, items: List[Dict[str, Any]]):
         """批量写入analysis表"""
+        if not items:
+            logger.warning("_write_analysis_batch: items为空列表")
+            return
+        
+        logger.debug(f"_write_analysis_batch: 准备写入 {len(items)} 条数据")
+        logger.debug(f"_write_analysis_batch: 第一条数据类型={type(items[0])}, 内容={items[0]}")
+        
         try:
             count = self.mysql_client.batch_write_analysis(items)
-            logger.debug(f"AsyncWriter批量写入 {count} 条到analysis表")
+            logger.info(f"AsyncWriter批量写入 {count} 条到analysis表")
         except Exception as e:
-            logger.error(f"AsyncWriter批量写入analysis表失败: {e}")
+            logger.error(f"AsyncWriter批量写入analysis表失败: {type(e).__name__}: {e}")
+            import traceback
+            logger.error(traceback.format_exc())
     
     def _flush_base(self):
         """强制刷空base队列"""

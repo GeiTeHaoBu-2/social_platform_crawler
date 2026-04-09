@@ -19,7 +19,7 @@ client = MySQLClient(config=config, platform='weibo')
 
 test_item = HotSearchItem(
     rank=1,
-    title='测试热搜' + str(int(datetime.now().timestamp())),
+    title='测试热搜1' + str(int(datetime.now().timestamp())),
     url='https://weibo.com/test',
     heat=5000000,
     latest_crawl_time=int(datetime.now().timestamp()),

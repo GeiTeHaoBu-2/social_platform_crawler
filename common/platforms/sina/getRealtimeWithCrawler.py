@@ -77,7 +77,7 @@ def get_realtime_data() -> list[HotSearchItem]:
 
         # 将零散的数据组装进我们定义好的标准契约对象中
         item = HotSearchItem(
-            rank=rank_text,
+            rank=int(rank_text),
             title=title,
             url=link,
             heat=heat_val,
