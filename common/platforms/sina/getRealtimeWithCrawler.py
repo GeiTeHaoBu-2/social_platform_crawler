@@ -29,16 +29,19 @@ def get_realtime_data() -> list[HotSearchItem]:
         logger.info("请求成功！")
     except requests.exceptions.RequestException as e:
         logger.error(f"请求失败：{e}")
-        exit()
+        return []
 
+    logger.info(response.headers.get('Cookie', '未知内容类型'))
+    logger.info("正在解析页面内容...")
     # 解析HTML内容
     soup = BeautifulSoup(response.text, 'lxml')
+    # print(soup.prettify())  # 打印解析后的HTML结构，帮助调试和定位元素
     # 通过检查元素，发现热搜列表在一个id为`pl_top_realtimehot`的table下的tbody中
     # 我们首先找到这个table
     hot_search_table = soup.find('tbody')
     if hot_search_table is None:
         logger.error("未找到热搜列表表格，请检查页面结构或Cookie是否有效")
-        exit()
+        return []
 
     # 然后找到表格内的所有tr标签
     items = hot_search_table.find_all('tr')

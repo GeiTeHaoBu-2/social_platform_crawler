@@ -7,7 +7,7 @@
 作者备注: 
     - 使用queue.Queue + threading.Thread(daemon=True)
     - 批量阈值：满100条或每5秒强制刷盘
-    - 主线程只负责queue.put()，严禁直接操作数据库
+    - 每个线程有独立的MySQL连接（线程安全）
 """
 
 import queue
@@ -25,6 +25,8 @@ class AsyncWriter:
     
     架构设计:
     主爬虫线程 ──> Queue ──> 后台守护线程 ──> 批量写入MySQL
+    
+    重要：每个守护线程有独立的MySQL连接，避免线程安全问题
     
     批量策略:
     - 数量阈值: 100条
@@ -52,8 +54,9 @@ class AsyncWriter:
         self.base_queue = queue.Queue()
         self.analysis_queue = queue.Queue()
         
-        # MySQL客户端（在守护线程中使用）
-        self.mysql_client: Optional[MySQLClient] = None
+        # 每个线程独立的MySQL客户端
+        self._base_mysql_client: Optional[MySQLClient] = None
+        self._analysis_mysql_client: Optional[MySQLClient] = None
         
         # 守护线程控制
         self._stop_event = threading.Event()
@@ -64,8 +67,7 @@ class AsyncWriter:
     
     def start(self):
         """启动异步写入守护线程"""
-        # 初始化MySQL连接（在子线程中各自维护连接）
-        self.mysql_client = MySQLClient(self.db_config, self.platform)
+        # 注意：MySQL连接在每个线程内部创建，避免线程安全问题
         
         # 启动base表写入线程
         self._base_worker = threading.Thread(
@@ -83,7 +85,7 @@ class AsyncWriter:
         )
         self._analysis_worker.start()
         
-        logger.info("异步写入守护线程已启动")
+        logger.info("异步写入守护线程已启动（每个线程独立MySQL连接）")
     
     def stop(self):
         """停止异步写入器，尝试清空队列"""
@@ -97,13 +99,11 @@ class AsyncWriter:
               and time.time() - start_time < timeout:
             time.sleep(0.1)
         
-        # 强制刷新剩余数据
-        self._flush_base()
-        self._flush_analysis()
-        
-        # 关闭MySQL连接
-        if self.mysql_client:
-            self.mysql_client.close()
+        # 等待线程结束
+        if self._base_worker and self._base_worker.is_alive():
+            self._base_worker.join(timeout=2)
+        if self._analysis_worker and self._analysis_worker.is_alive():
+            self._analysis_worker.join(timeout=2)
         
         logger.info("AsyncWriter已停止")
     
@@ -143,6 +143,14 @@ class AsyncWriter:
     
     def _base_writer_loop(self):
         """base表写入守护线程主循环"""
+        # 在线程内部创建独立的MySQL连接
+        try:
+            self._base_mysql_client = MySQLClient(self.db_config, self.platform)
+            logger.info("[BaseWriter] MySQL连接已创建")
+        except Exception as e:
+            logger.error(f"[BaseWriter] MySQL连接创建失败: {e}")
+            return
+        
         buffer = []
         last_flush_time = time.time()
         
@@ -169,9 +177,22 @@ class AsyncWriter:
         # 循环结束，刷盘剩余数据
         if buffer:
             self._write_base_batch(buffer)
+        
+        # 关闭连接
+        if self._base_mysql_client:
+            self._base_mysql_client.close()
+            logger.info("[BaseWriter] MySQL连接已关闭")
     
     def _analysis_writer_loop(self):
         """analysis表写入守护线程主循环"""
+        # 在线程内部创建独立的MySQL连接
+        try:
+            self._analysis_mysql_client = MySQLClient(self.db_config, self.platform)
+            logger.info("[AnalysisWriter] MySQL连接已创建")
+        except Exception as e:
+            logger.error(f"[AnalysisWriter] MySQL连接创建失败: {e}")
+            return
+        
         buffer = []
         last_flush_time = time.time()
         
@@ -195,62 +216,51 @@ class AsyncWriter:
         
         if buffer:
             self._write_analysis_batch(buffer)
+        
+        # 关闭连接
+        if self._analysis_mysql_client:
+            self._analysis_mysql_client.close()
+            logger.info("[AnalysisWriter] MySQL连接已关闭")
     
     def _write_base_batch(self, items: List):
         """批量写入base表"""
         if not items:
-            logger.warning("_write_base_batch: items为空列表")
+            logger.warning("[BaseWriter] items为空列表")
             return
         
-        logger.debug(f"_write_base_batch: 准备写入 {len(items)} 条数据")
-        logger.debug(f"_write_base_batch: 第一条数据类型={type(items[0])}, 内容={items[0]}")
+        if not self._base_mysql_client:
+            logger.error("[BaseWriter] MySQL客户端未初始化")
+            return
+        
+        logger.debug(f"[BaseWriter] 准备写入 {len(items)} 条数据到base表")
         
         try:
-            count = self.mysql_client.batch_write_base(items)
-            logger.info(f"AsyncWriter批量写入 {count} 条到base表")
+            count = self._base_mysql_client.batch_write_base(items)
+            logger.info(f"[BaseWriter] 成功写入 {count} 条到base表")
         except Exception as e:
-            logger.error(f"AsyncWriter批量写入base表失败: {type(e).__name__}: {e}")
+            logger.error(f"[BaseWriter] 批量写入base表失败: {type(e).__name__}: {e}")
             import traceback
             logger.error(traceback.format_exc())
     
     def _write_analysis_batch(self, items: List[Dict[str, Any]]):
         """批量写入analysis表"""
         if not items:
-            logger.warning("_write_analysis_batch: items为空列表")
+            logger.warning("[AnalysisWriter] items为空列表")
             return
         
-        logger.debug(f"_write_analysis_batch: 准备写入 {len(items)} 条数据")
-        logger.debug(f"_write_analysis_batch: 第一条数据类型={type(items[0])}, 内容={items[0]}")
+        if not self._analysis_mysql_client:
+            logger.error("[AnalysisWriter] MySQL客户端未初始化")
+            return
+        
+        logger.debug(f"[AnalysisWriter] 准备写入 {len(items)} 条数据到analysis表")
         
         try:
-            count = self.mysql_client.batch_write_analysis(items)
-            logger.info(f"AsyncWriter批量写入 {count} 条到analysis表")
+            count = self._analysis_mysql_client.batch_write_analysis(items)
+            logger.info(f"[AnalysisWriter] 成功写入 {count} 条到analysis表")
         except Exception as e:
-            logger.error(f"AsyncWriter批量写入analysis表失败: {type(e).__name__}: {e}")
+            logger.error(f"[AnalysisWriter] 批量写入analysis表失败: {type(e).__name__}: {e}")
             import traceback
             logger.error(traceback.format_exc())
-    
-    def _flush_base(self):
-        """强制刷空base队列"""
-        buffer = []
-        while not self.base_queue.empty():
-            try:
-                buffer.append(self.base_queue.get_nowait())
-            except queue.Empty:
-                break
-        if buffer:
-            self._write_base_batch(buffer)
-    
-    def _flush_analysis(self):
-        """强制刷空analysis队列"""
-        buffer = []
-        while not self.analysis_queue.empty():
-            try:
-                buffer.append(self.analysis_queue.get_nowait())
-            except queue.Empty:
-                break
-        if buffer:
-            self._write_analysis_batch(buffer)
 
 
 if __name__ == '__main__':

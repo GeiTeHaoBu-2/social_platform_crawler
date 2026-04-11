@@ -14,7 +14,6 @@
     result = analyzer.analyze("标题")
     results = analyzer.analyze_batch(["标题1", "标题2"])
 """
-import hashlib
 import time
 from typing import List, Dict, Any, Optional, Tuple
 
@@ -44,7 +43,7 @@ class LLMAnalyzer:
         初始化LLM分析器
         
         Args:
-            api_config: API配置字典
+            api_config: API配置字典（支持多模型配置）
             redis_config: Redis配置字典
         """
         # 加载配置
@@ -55,12 +54,14 @@ class LLMAnalyzer:
             except ImportError:
                 api_config = {}
         
-        # 初始化组件
+        # 初始化组件（传入完整配置，包括primary/backup/failover）
         self.client = LLMClient(api_config)
         self.cache = LLMCache(redis_config)
         
         # 加载Prompts
         self.system_prompt, self.batch_system_prompt = PromptLoader.load()
+        
+        logger.info("🤖 LLM Analyzer初始化完成")
     
     def analyze(self, title: str) -> Dict[str, Any]:
         """
@@ -158,7 +159,7 @@ class LLMAnalyzer:
         new_items = []
         
         for i, (item, analysis) in enumerate(zip(items, analysis_results)):
-            item_id = getattr(item, 'item_id', None) or self._generate_item_id(item.title)
+            item_id = item.item_id
             
             result = {
                 'item_id': item_id,
@@ -176,6 +177,16 @@ class LLMAnalyzer:
             
             if i in new_indices:
                 new_items.append(item)
+                is_new = "[NEW]"
+            else:
+                is_new = "[CACHE]"
+            
+            # 实时输出处理结果
+            logger.info(f"[Item处理] {is_new} Rank:{item.rank:2d} | "
+                       f"热度:{item.heat:>8} | "
+                       f"情感:{analysis.get('sentiment_score', 0):.2f} | "
+                       f"类型:{analysis.get('type_name', '其他'):6s} | "
+                       f"{item.title[:25]}{'...' if len(item.title) > 25 else ''}")
         
         # 输出缓存统计
         hit_rate = self.cache.get_hit_rate()
@@ -246,12 +257,24 @@ class LLMAnalyzer:
     def _analyze_in_batches(self, titles: List[str]) -> List[Dict[str, Any]]:
         """分批分析标题"""
         all_results = []
+        total_batches = (len(titles) + self.BATCH_SIZE - 1) // self.BATCH_SIZE
         
         for i in range(0, len(titles), self.BATCH_SIZE):
+            batch_num = i // self.BATCH_SIZE + 1
             batch = titles[i:i + self.BATCH_SIZE]
+            logger.info(f"[LLM分析] 批次 {batch_num}/{total_batches}: 分析 {len(batch)} 条标题")
+            
             batch_results = self._call_batch_api(batch)
             all_results.extend(batch_results)
+            
+            # 实时输出每批结果
+            for j, (title, result) in enumerate(zip(batch, batch_results)):
+                logger.info(f"[LLM结果] [{i+j+1}/{len(titles)}] 标题: {title[:30]}... | "
+                          f"情感: {result.get('sentiment_score', 0):.2f} | "
+                          f"类型: {result.get('type_name', '未知')} | "
+                          f"话题: {result.get('topic_name', '无')[:20]}")
         
+        logger.info(f"[LLM分析] 完成: 共 {len(all_results)} 条")
         return all_results
     
     def _call_batch_api(self, titles: List[str]) -> List[Dict[str, Any]]:
@@ -314,11 +337,14 @@ class LLMAnalyzer:
         
         # 分析未缓存的
         if titles_to_analyze:
+            logger.info(f"[LLM分析] 缓存未命中: {len(titles_to_analyze)} 条需要调用API")
             batch_results = self._analyze_in_batches(titles_to_analyze)
             for title, result in zip(titles_to_analyze, batch_results):
                 idx = cache_map[title]
                 results.append((idx, result))
                 self.cache.set(title, result)
+        else:
+            logger.info("[LLM分析] 全部命中缓存，无需调用API")
         
         results.sort(key=lambda x: x[0])
         return [r[1] for r in results], new_indices
@@ -332,10 +358,5 @@ class LLMAnalyzer:
             'keywords': []
         }
     
-    def _generate_item_id(self, title: str) -> str:
-        """生成item_id"""
-        return hashlib.md5(title.encode('utf-8')).hexdigest()
-
-
 # 向后兼容：保留原有导入
 __all__ = ['LLMAnalyzer']

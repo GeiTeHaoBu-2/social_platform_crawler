@@ -35,6 +35,7 @@ env/
 
 # Configuration files with sensitive data
 common/config/settings.py
+resources/.env
 
 # Logs
 *.log
