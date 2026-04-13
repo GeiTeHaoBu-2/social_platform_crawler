@@ -25,8 +25,9 @@ class MySQLClient:
             self.platform = platform
             self.table_base = f"{platform}_base"
             self.table_analysis = f"{platform}_analysis"
+            self.table_trend = f"{platform}_trend"
             
-            logger.info(f"MySQL连接成功！目标维度表: {self.table_base}, {self.table_analysis}")
+            logger.info(f"MySQL连接成功！目标表: {self.table_base}, {self.table_analysis}, {self.table_trend}")
         except Exception as e:
             logger.error(f"MySQL连接失败: {e}")
             raise
@@ -97,6 +98,40 @@ class MySQLClient:
         except Exception as e:
             self.connection.rollback()
             logger.error(f"批量写入 {self.table_analysis} 失败: {type(e).__name__}: {e}")
+            import traceback
+            logger.error(traceback.format_exc())
+            return 0
+
+    def batch_write_trend(self, items: List[Dict[str, Any]]) -> int:
+        if not items:
+            return 0
+        
+        params = []
+        for item in items:
+            params.append((
+                item['item_id'],
+                item['rank_pos'],
+                item['heat'],
+                item['heat_velocity'],
+                item['rank_velocity'],
+                item['crawl_time']
+            ))
+        
+        sql = f"""
+            INSERT INTO `{self.table_trend}` 
+            (item_id, rank_pos, heat, heat_velocity, rank_velocity, crawl_time)
+            VALUES (%s, %s, %s, %s, %s, %s)
+        """
+        
+        try:
+            with self.connection.cursor() as cursor:
+                result = cursor.executemany(sql, params)
+                self.connection.commit()
+                logger.debug(f"成功写入 {len(items)} 条数据到 {self.table_trend} 表")
+                return len(items)
+        except Exception as e:
+            self.connection.rollback()
+            logger.error(f"批量写入 {self.table_trend} 失败: {type(e).__name__}: {e}")
             import traceback
             logger.error(traceback.format_exc())
             return 0

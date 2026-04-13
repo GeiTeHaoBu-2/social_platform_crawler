@@ -73,7 +73,7 @@ class RedisManager:
                 'baidu': 'platform:baidu:realtime_board'
             }
             redis_key = key_mapping.get(platform, f'platform:{platform}:realtime_board')
-            data = [item.to_dict() for item in items]
+            data = [item.to_dict(include_url=True, include_nlp=True) for item in items]
             json_str = json.dumps(data, ensure_ascii=False)
             self.client.setex(redis_key, 600, json_str)
             logger.debug(f"热搜数据已写入Redis: {redis_key}")
@@ -81,6 +81,26 @@ class RedisManager:
         except Exception as e:
             logger.error(f"保存热搜到Redis失败: {e}")
             return False
+    
+    def get_last_hot_search(self, platform: str = 'weibo') -> Optional[List[Dict]]:
+        """获取上一轮热搜数据"""
+        if not self._ensure_connection():
+            return None
+        
+        try:
+            key_mapping = {
+                'weibo': 'platform:weibo:realtime_board',
+                'zhihu': 'platform:zhihu:realtime_board',
+                'baidu': 'platform:baidu:realtime_board'
+            }
+            redis_key = key_mapping.get(platform, f'platform:{platform}:realtime_board')
+            data = self.client.get(redis_key)
+            if data:
+                return json.loads(data)
+            return None
+        except Exception as e:
+            logger.error(f"获取上一轮热搜数据失败: {e}")
+            return None
     
     def close(self):
         if self.client:

@@ -1,13 +1,6 @@
 """
 模块名称: async_writer.py
 模块职责: 异步数据库写入器，实现队列+守护线程模式
-输入接口: enqueue_base(item), enqueue_analysis(item), start(), stop()
-输出格式: 批量写入MySQL维度表
-依赖模块: queue, threading, common.storage.mysql_client.MySQLClient
-作者备注: 
-    - 使用queue.Queue + threading.Thread(daemon=True)
-    - 批量阈值：满100条或每5秒强制刷盘
-    - 每个线程有独立的MySQL连接（线程安全）
 """
 
 import queue
@@ -20,56 +13,29 @@ from common.utils.logging_config import logger
 
 
 class AsyncWriter:
-    """
-    异步数据库写入器
-    
-    架构设计:
-    主爬虫线程 ──> Queue ──> 后台守护线程 ──> 批量写入MySQL
-    
-    重要：每个守护线程有独立的MySQL连接，避免线程安全问题
-    
-    批量策略:
-    - 数量阈值: 100条
-    - 时间阈值: 5秒
-    - 程序退出: 尝试清空队列
-    """
-    
-    # 批量写入阈值
     BATCH_SIZE = 100
-    # 强制刷盘间隔(秒)
     FLUSH_INTERVAL = 5
     
     def __init__(self, db_config: Dict[str, Any], platform: str = 'weibo'):
-        """
-        初始化异步写入器
-        
-        Args:
-            db_config: MySQL配置字典
-            platform: 平台标识
-        """
         self.db_config = db_config
         self.platform = platform
         
-        # 初始化两个队列：base表和analysis表分开处理
         self.base_queue = queue.Queue()
         self.analysis_queue = queue.Queue()
+        self.trend_queue = queue.Queue()
         
-        # 每个线程独立的MySQL客户端
         self._base_mysql_client: Optional[MySQLClient] = None
         self._analysis_mysql_client: Optional[MySQLClient] = None
+        self._trend_mysql_client: Optional[MySQLClient] = None
         
-        # 守护线程控制
         self._stop_event = threading.Event()
         self._base_worker: Optional[threading.Thread] = None
         self._analysis_worker: Optional[threading.Thread] = None
+        self._trend_worker: Optional[threading.Thread] = None
         
         logger.info("AsyncWriter初始化完成")
     
     def start(self):
-        """启动异步写入守护线程"""
-        # 注意：MySQL连接在每个线程内部创建，避免线程安全问题
-        
-        # 启动base表写入线程
         self._base_worker = threading.Thread(
             target=self._base_writer_loop,
             name="AsyncBaseWriter",
@@ -77,7 +43,6 @@ class AsyncWriter:
         )
         self._base_worker.start()
         
-        # 启动analysis表写入线程
         self._analysis_worker = threading.Thread(
             target=self._analysis_writer_loop,
             name="AsyncAnalysisWriter",
@@ -85,38 +50,35 @@ class AsyncWriter:
         )
         self._analysis_worker.start()
         
-        logger.info("异步写入守护线程已启动（每个线程独立MySQL连接）")
+        self._trend_worker = threading.Thread(
+            target=self._trend_writer_loop,
+            name="AsyncTrendWriter",
+            daemon=True
+        )
+        self._trend_worker.start()
+        
+        logger.info("异步写入守护线程已启动（base/analysis/trend）")
     
     def stop(self):
-        """停止异步写入器，尝试清空队列"""
         logger.info("正在停止AsyncWriter，尝试清空队列...")
         self._stop_event.set()
         
-        # 等待队列清空（最多5秒）
         timeout = 5
         start_time = time.time()
-        while (not self.base_queue.empty() or not self.analysis_queue.empty()) \
+        while (not self.base_queue.empty() or not self.analysis_queue.empty() or not self.trend_queue.empty()) \
               and time.time() - start_time < timeout:
             time.sleep(0.1)
         
-        # 等待线程结束
         if self._base_worker and self._base_worker.is_alive():
             self._base_worker.join(timeout=2)
         if self._analysis_worker and self._analysis_worker.is_alive():
             self._analysis_worker.join(timeout=2)
+        if self._trend_worker and self._trend_worker.is_alive():
+            self._trend_worker.join(timeout=2)
         
         logger.info("AsyncWriter已停止")
     
     def enqueue_base(self, item) -> bool:
-        """
-        将item放入base表写入队列
-        
-        Args:
-            item: HotSearchItem对象
-            
-        Returns:
-            bool: 是否成功入队
-        """
         try:
             self.base_queue.put(item, block=False)
             return True
@@ -125,15 +87,6 @@ class AsyncWriter:
             return False
     
     def enqueue_analysis(self, item: Dict[str, Any]) -> bool:
-        """
-        将分析结果放入analysis表写入队列
-        
-        Args:
-            item: 包含分析结果的字典
-            
-        Returns:
-            bool: 是否成功入队
-        """
         try:
             self.analysis_queue.put(item, block=False)
             return True
@@ -141,9 +94,15 @@ class AsyncWriter:
             logger.warning("analysis_queue已满，丢弃数据")
             return False
     
+    def enqueue_trend(self, item: Dict[str, Any]) -> bool:
+        try:
+            self.trend_queue.put(item, block=False)
+            return True
+        except queue.Full:
+            logger.warning("trend_queue已满，丢弃数据")
+            return False
+    
     def _base_writer_loop(self):
-        """base表写入守护线程主循环"""
-        # 在线程内部创建独立的MySQL连接
         try:
             self._base_mysql_client = MySQLClient(self.db_config, self.platform)
             logger.info("[BaseWriter] MySQL连接已创建")
@@ -156,13 +115,11 @@ class AsyncWriter:
         
         while not self._stop_event.is_set() or not self.base_queue.empty():
             try:
-                # 非阻塞取数据，超时100ms
                 item = self.base_queue.get(timeout=0.1)
                 buffer.append(item)
             except queue.Empty:
                 pass
             
-            # 检查是否需要刷盘
             current_time = time.time()
             should_flush = (
                 len(buffer) >= self.BATCH_SIZE or
@@ -174,18 +131,14 @@ class AsyncWriter:
                 buffer = []
                 last_flush_time = current_time
         
-        # 循环结束，刷盘剩余数据
         if buffer:
             self._write_base_batch(buffer)
         
-        # 关闭连接
         if self._base_mysql_client:
             self._base_mysql_client.close()
             logger.info("[BaseWriter] MySQL连接已关闭")
     
     def _analysis_writer_loop(self):
-        """analysis表写入守护线程主循环"""
-        # 在线程内部创建独立的MySQL连接
         try:
             self._analysis_mysql_client = MySQLClient(self.db_config, self.platform)
             logger.info("[AnalysisWriter] MySQL连接已创建")
@@ -217,54 +170,75 @@ class AsyncWriter:
         if buffer:
             self._write_analysis_batch(buffer)
         
-        # 关闭连接
         if self._analysis_mysql_client:
             self._analysis_mysql_client.close()
             logger.info("[AnalysisWriter] MySQL连接已关闭")
     
+    def _trend_writer_loop(self):
+        try:
+            self._trend_mysql_client = MySQLClient(self.db_config, self.platform)
+            logger.info("[TrendWriter] MySQL连接已创建")
+        except Exception as e:
+            logger.error(f"[TrendWriter] MySQL连接创建失败: {e}")
+            return
+        
+        buffer = []
+        last_flush_time = time.time()
+        
+        while not self._stop_event.is_set() or not self.trend_queue.empty():
+            try:
+                item = self.trend_queue.get(timeout=0.1)
+                buffer.append(item)
+            except queue.Empty:
+                pass
+            
+            current_time = time.time()
+            should_flush = (
+                len(buffer) >= self.BATCH_SIZE or
+                (buffer and current_time - last_flush_time >= self.FLUSH_INTERVAL)
+            )
+            
+            if should_flush and buffer:
+                self._write_trend_batch(buffer)
+                buffer = []
+                last_flush_time = current_time
+        
+        if buffer:
+            self._write_trend_batch(buffer)
+        
+        if self._trend_mysql_client:
+            self._trend_mysql_client.close()
+            logger.info("[TrendWriter] MySQL连接已关闭")
+    
     def _write_base_batch(self, items: List):
-        """批量写入base表"""
-        if not items:
-            logger.warning("[BaseWriter] items为空列表")
+        if not items or not self._base_mysql_client:
             return
-        
-        if not self._base_mysql_client:
-            logger.error("[BaseWriter] MySQL客户端未初始化")
-            return
-        
-        logger.debug(f"[BaseWriter] 准备写入 {len(items)} 条数据到base表")
-        
         try:
             count = self._base_mysql_client.batch_write_base(items)
             logger.info(f"[BaseWriter] 成功写入 {count} 条到base表")
         except Exception as e:
-            logger.error(f"[BaseWriter] 批量写入base表失败: {type(e).__name__}: {e}")
-            import traceback
-            logger.error(traceback.format_exc())
+            logger.error(f"[BaseWriter] 批量写入base表失败: {e}")
     
     def _write_analysis_batch(self, items: List[Dict[str, Any]]):
-        """批量写入analysis表"""
-        if not items:
-            logger.warning("[AnalysisWriter] items为空列表")
+        if not items or not self._analysis_mysql_client:
             return
-        
-        if not self._analysis_mysql_client:
-            logger.error("[AnalysisWriter] MySQL客户端未初始化")
-            return
-        
-        logger.debug(f"[AnalysisWriter] 准备写入 {len(items)} 条数据到analysis表")
-        
         try:
             count = self._analysis_mysql_client.batch_write_analysis(items)
             logger.info(f"[AnalysisWriter] 成功写入 {count} 条到analysis表")
         except Exception as e:
-            logger.error(f"[AnalysisWriter] 批量写入analysis表失败: {type(e).__name__}: {e}")
-            import traceback
-            logger.error(traceback.format_exc())
+            logger.error(f"[AnalysisWriter] 批量写入analysis表失败: {e}")
+    
+    def _write_trend_batch(self, items: List[Dict[str, Any]]):
+        if not items or not self._trend_mysql_client:
+            return
+        try:
+            count = self._trend_mysql_client.batch_write_trend(items)
+            logger.info(f"[TrendWriter] 成功写入 {count} 条到trend表")
+        except Exception as e:
+            logger.error(f"[TrendWriter] 批量写入trend表失败: {e}")
 
 
 if __name__ == '__main__':
-    # 测试代码
     from datetime import datetime
     from common.models.item import HotSearchItem
     
@@ -280,7 +254,6 @@ if __name__ == '__main__':
     writer = AsyncWriter(config, platform='weibo')
     writer.start()
     
-    # 模拟写入
     for i in range(10):
         item = HotSearchItem(
             rank=i+1,
@@ -299,6 +272,16 @@ if __name__ == '__main__':
             'nlp_time': int(datetime.now().timestamp())
         }
         writer.enqueue_analysis(analysis)
+        
+        trend = {
+            'item_id': hashlib.md5(f"测试热搜{i}".encode()).hexdigest(),
+            'rank_pos': i+1,
+            'heat': 1000000,
+            'heat_velocity': 100.5,
+            'rank_velocity': -0.5,
+            'crawl_time': int(datetime.now().timestamp() * 1000)
+        }
+        writer.enqueue_trend(trend)
     
     time.sleep(3)
     writer.stop()
