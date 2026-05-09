@@ -190,7 +190,7 @@ CREATE TABLE `weibo_analysis`  (
   `sentiment_score` float NULL DEFAULT 0 COMMENT '情感分数 (-1 到 1 或 0 到 1，需与 NLP 库一致)',
   `topic_name` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '话题名称 (扁平化)',
   `type_name` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '未知' COMMENT '内容类型 (娱乐/社会/科技等)',
-  `nlp_time` bigint(20) NOT NULL COMMENT '分析时间戳 (毫秒)',
+  `llm_time` bigint(20) NOT NULL COMMENT 'LLM分析时间戳 (毫秒)',
   `update_time` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`item_id`) USING BTREE,
   INDEX `idx_topic_name`(`topic_name`) USING BTREE
@@ -219,8 +219,6 @@ CREATE TABLE `weibo_trend`  (
   `item_id` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '逻辑外键：MD5(title)',
   `rank_pos` int(11) NOT NULL COMMENT '当前排名',
   `heat` bigint(20) NOT NULL COMMENT '当前热度',
-  `heat_velocity` FLOAT NULL DEFAULT 0 COMMENT '热度加速度(每分钟热度变化)',
-  `rank_velocity` FLOAT NULL DEFAULT 0 COMMENT '排名加速度(每分钟排名变化，负数表示排名上升)',
   `crawl_time` bigint(20) NOT NULL COMMENT '抓取时间戳 (毫秒)',
   `process_time` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '入库时间',
   PRIMARY KEY (`id`) USING BTREE,

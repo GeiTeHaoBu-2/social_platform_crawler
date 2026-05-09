@@ -218,7 +218,7 @@ class LLMAnalyzer:
                 'sentiment_score': item['sentiment_score'],
                 'type_name': item['type_name'],
                 'topic_name': item['topic_name'],
-                'nlp_time': int(time.time())
+                'llm_time': int(time.time())
             }
             analysis_items.append(analysis_item)
         

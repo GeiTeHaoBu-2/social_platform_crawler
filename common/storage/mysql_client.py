@@ -75,18 +75,18 @@ class MySQLClient:
                 item['sentiment_score'],
                 item['type_name'],
                 item['topic_name'],
-                item['nlp_time']
+                item['llm_time']
             ))
         
         sql = f"""
             INSERT INTO `{self.table_analysis}` 
-            (item_id, sentiment_score, type_name, topic_name, nlp_time)
+            (item_id, sentiment_score, type_name, topic_name, llm_time)
             VALUES (%s, %s, %s, %s, %s)
             ON DUPLICATE KEY UPDATE
                 sentiment_score = VALUES(sentiment_score),
                 type_name = VALUES(type_name),
                 topic_name = VALUES(topic_name),
-                nlp_time = VALUES(nlp_time)
+                llm_time = VALUES(llm_time)
         """
         
         try:
@@ -112,22 +112,20 @@ class MySQLClient:
                 item['item_id'],
                 item['rank_pos'],
                 item['heat'],
-                item['heat_velocity'],
-                item['rank_velocity'],
                 item['crawl_time']
             ))
         
         sql = f"""
             INSERT INTO `{self.table_trend}` 
-            (item_id, rank_pos, heat, heat_velocity, rank_velocity, crawl_time)
-            VALUES (%s, %s, %s, %s, %s, %s)
+            (item_id, rank_pos, heat, crawl_time)
+            VALUES (%s, %s, %s, %s)
         """
         
         try:
             with self.connection.cursor() as cursor:
                 result = cursor.executemany(sql, params)
                 self.connection.commit()
-                logger.debug(f"成功写入 {len(items)} 条数据到 {self.table_trend} 表")
+                logger.info(f"成功写入 {len(items)} 条数据到 {self.table_trend} 表")
                 return len(items)
         except Exception as e:
             self.connection.rollback()
@@ -172,7 +170,7 @@ if __name__ == '__main__':
         'sentiment_score': 0.5,
         'type_name': '娱乐',
         'topic_name': '测试话题',
-        'nlp_time': int(datetime.now().timestamp())
+        'llm_time': int(datetime.now().timestamp())
     }]
     count = client.batch_write_analysis(test_analysis)
     print(f"写入analysis表: {count} 条")

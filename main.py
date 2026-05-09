@@ -6,14 +6,15 @@
 import sys
 import os
 import time
+import threading
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-from common.config.settings import CONFIG
+from common.config.settings import CONFIG, config_loader
 from common.platforms.sina.getRealtimeWithCrawler import get_realtime_data
 from common.process.cleaner import Cleaner
 from common.process.llm_analyzer import LLMAnalyzer
-from common.process.velocity_calculator import VelocityCalculator
+from common.process.diff_calculator import DiffCalculator
 from common.storage.redis_manager import RedisManager
 from common.storage.async_writer import AsyncWriter
 from common.transmit.kafka_producer import KafkaProducerWrapper
@@ -28,7 +29,7 @@ class HotSearchPipeline:
             redis_config=CONFIG['REDIS']
         )
         self.redis = RedisManager(CONFIG['REDIS'])
-        self.velocity_calculator = VelocityCalculator(self.redis)
+        self.diff_calculator = DiffCalculator(self.redis)
         self.writer = AsyncWriter(CONFIG['DB'], platform='weibo')
         self.kafka = KafkaProducerWrapper(CONFIG['KAFKA']['bootstrap_servers'])
         
@@ -36,7 +37,40 @@ class HotSearchPipeline:
         self.sleep_seconds = CONFIG['CRAWLER']['sleep_seconds']
         self._running = False
         
+        from common.utils.logging_config import add_kafka_handler
+        self.kafka_log_handler = add_kafka_handler(self.kafka, topic='python.logs')
+        
+        self._start_config_reload_thread()
+        
         logger.info("HotSearchPipeline初始化完成")
+    
+    def _start_config_reload_thread(self):
+        """启动配置热更新线程"""
+        def reload_loop():
+            while self._running:
+                time.sleep(60)
+                
+                try:
+                    if config_loader.reload_config_if_changed():
+                        self._reload_llm_analyzer()
+                        
+                except Exception as e:
+                    logger.error(f"配置热更新失败: {e}")
+        
+        thread = threading.Thread(target=reload_loop, daemon=True)
+        thread.start()
+        logger.info("✅ 配置热更新线程已启动")
+    
+    def _reload_llm_analyzer(self):
+        """重新加载LLM分析器"""
+        CONFIG['ANALYZER'] = config_loader.get_llm_config()
+        
+        self.analyzer = LLMAnalyzer(
+            api_config=CONFIG['ANALYZER'],
+            redis_config=CONFIG['REDIS']
+        )
+        
+        logger.info("✅ LLM分析器已重新加载")
     
     def start(self):
         self._running = True
@@ -66,12 +100,12 @@ class HotSearchPipeline:
                 return
             logger.info(f"[2/7] 清洗完成: {len(items)} 条")
             
-            # 3. 计算加速度（在Redis缓存前，因为需要读取上一轮数据）
+            # 3. 计算差值（在Redis缓存前，因为需要读取上一轮数据）
             current_time = int(time.time())
-            velocity_result = self.velocity_calculator.calculate(items, current_time, 'weibo')
+            diff_result = self.diff_calculator.calculate(items, current_time, 'weibo')
             for item in items:
-                item.heat_velocity, item.rank_velocity = velocity_result.get(item.item_id, (0.0, 0.0))
-            logger.info(f"[3/7] 加速度计算完成")
+                item.heat_diff, item.rank_diff = diff_result.get(item.item_id, (0, 0))
+            logger.info(f"[3/7] 差值计算完成")
             
             # 4. LLM分析
             result = self.analyzer.process_items(items, CONFIG['REDIS'])
@@ -104,14 +138,12 @@ class HotSearchPipeline:
             for item in analysis_items:
                 self.writer.enqueue_analysis(item)
             
-            # 6.3 写入trend表（全量）
+            # 6.3 写入trend表（全量，不含差值字段）
             for item in items:
                 trend_item = {
                     'item_id': item.item_id,
                     'rank_pos': item.rank,
                     'heat': item.heat,
-                    'heat_velocity': item.heat_velocity,
-                    'rank_velocity': item.rank_velocity,
                     'crawl_time': item.latest_crawl_time * 1000
                 }
                 self.writer.enqueue_trend(trend_item)

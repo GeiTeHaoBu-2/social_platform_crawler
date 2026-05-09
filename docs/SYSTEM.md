@@ -12,7 +12,7 @@
 
 1. **多平台数据采集**：支持微博、知乎、百度等多个平台的热搜数据实时爬取
 2. **智能内容分析**：利用大语言模型（LLM）对热搜内容进行情感分析、类型分类、话题提取
-3. **趋势变化追踪**：计算热搜热度/排名的加速度，追踪热点演变趋势
+3. **趋势变化追踪**：计算热搜热度/排名的差值，追踪热点演变趋势
 4. **实时数据分发**：通过消息队列将数据实时推送至下游分析系统
 5. **可视化展示**：为前端提供结构化数据接口，支持数据可视化展示
 
@@ -38,7 +38,7 @@
 │                │                │              │            │
 │ - 微博爬虫     │ - 数据清洗     │ - MySQL      │ - Kafka    │
 │ - 知乎爬虫     │ - LLM分析      │ - Redis      │            │
-│ - 百度爬虫     │ - 加速度计算   │              │            │
+│ - 百度爬虫     │ - 差值计算   │              │            │
 └─────────────────────────────────────────────────────────────┘
 ├─────────────────────────────────────────────────────────────┤
 │                      基础设施层                              │
@@ -62,7 +62,7 @@
 def run_once(self):
     items = self.crawler.fetch()           # 调度：获取数据
     items = self.cleaner.clean(items)      # 调度：清洗数据
-    velocity = self.calculator.calculate() # 调度：计算加速度
+    velocity = self.calculator.calculate() # 调度：计算差值
     self.writer.write(items)               # 调度：写入数据
 ```
 
@@ -73,7 +73,7 @@ def run_once(self):
 | 模块目录 | 职责 | 核心类/函数 |
 |---------|------|------------|
 | `platforms/` | 数据采集 | `get_realtime_data()` |
-| `process/` | 数据处理 | `Cleaner`, `LLMAnalyzer`, `VelocityCalculator` |
+| `process/` | 数据处理 | `Cleaner`, `LLMAnalyzer`, `DiffCalculator` |
 | `storage/` | 数据存储 | `MySQLClient`, `RedisManager`, `AsyncWriter` |
 | `transmit/` | 消息传输 | `KafkaProducerWrapper` |
 | `models/` | 数据模型 | `HotSearchItem` |
@@ -155,12 +155,12 @@ SYSTEM_PROMPT = """
 - 缓存 TTL：24小时
 - 命中率优化：相同标题直接返回缓存结果
 
-#### 3.2.3 加速度计算技术
+#### 3.2.3 差值计算技术
 
 **计算公式**：
 ```
-heatVelocity = (当前热度 - 上次热度) / 时间差(分钟)
-rankVelocity = (当前排名 - 上次排名) / 时间差(分钟)
+heatDiff = (当前热度 - 上次热度) / 时间差(分钟)
+rankDiff = (当前排名 - 上次排名) / 时间差(分钟)
 ```
 
 **数据来源**：
@@ -196,7 +196,7 @@ rankVelocity = (当前排名 - 上次排名) / 时间差(分钟)
        │
        ▼
 ┌──────────────┐
-│ 3. 加速度计算 │  VelocityCalculator.calculate()
+│ 3. 差值计算 │  DiffCalculator.calculate()
 │   process/   │  读取Redis历史数据，计算velocity
 └──────┬───────┘
        │
@@ -237,8 +237,8 @@ HotSearchItem(
     latest_crawl_time=1712841600,
     first_on_board_time=1712841600,
     item_id="e99a18c4...",      # 自动生成
-    heat_velocity=100000.0,     # 加速度计算后填充
-    rank_velocity=-1.0          # 加速度计算后填充
+    heat_diff=100000.0,     # 差值计算后填充
+    rank_diff=-1.0          # 差值计算后填充
 )
     │
     ├─► LLM分析后添加：
@@ -252,8 +252,8 @@ HotSearchItem(
             "rankPos": 1,
             "title": "某热搜",
             "heat": 5000000,
-            "heatVelocity": 100000.0,
-            "rankVelocity": -1.0,
+            "heatDiff": 500000,
+            "rankDiff": -2,
             "sentimentScore": 0.75,
             "typeName": "娱乐",
             "topicName": "明星八卦",
@@ -293,8 +293,8 @@ HotSearchItem(
 │  item_id (FK)                                           │
 │  rank_pos                                               │
 │  heat                                                   │
-│  heat_velocity                                          │
-│  rank_velocity                                          │
+│  heat_diff                                          │
+│  rank_diff                                          │
 │  crawl_time                                             │
 │  process_time                                           │
 └─────────────────────────────────────────────────────────┘
@@ -345,8 +345,8 @@ HotSearchItem(
 | item_id | varchar(32) | NOT NULL | 关联热搜 |
 | rank_pos | int | NOT NULL | 当前排名 |
 | heat | bigint | NOT NULL | 当前热度 |
-| heat_velocity | float | DEFAULT 0 | 热度加速度 |
-| rank_velocity | float | DEFAULT 0 | 排名加速度 |
+| heat_diff | BIGINT | DEFAULT 0 | 热度差值 |
+| rank_diff | INT | DEFAULT 0 | 排名差值 |
 | crawl_time | bigint | NOT NULL | 抓取时间（毫秒） |
 | process_time | timestamp | DEFAULT CURRENT_TIMESTAMP | 入库时间 |
 
@@ -557,9 +557,9 @@ class AsyncWriter:
 
 ### 7.1 技术创新
 
-#### 7.1.1 热搜加速度计算
+#### 7.1.1 热搜差值计算
 
-**创新点**：首次将物理学中的"加速度"概念引入热搜趋势分析。
+**创新点**：首次将物理学中的"差值"概念引入热搜趋势分析。
 
 **实现方式**：
 - 实时计算热度/排名的变化率
@@ -703,7 +703,7 @@ nohup python main.py > logs/crawler.log 2>&1 &
 本系统实现了一个完整的社交媒体热搜监控与分析平台，具有以下特点：
 
 1. **架构清晰**：分层设计、模块化实现、职责分离
-2. **技术先进**：LLM智能分析、加速度趋势追踪、动态配置
+2. **技术先进**：LLM智能分析、差值趋势追踪、动态配置
 3. **性能优异**：异步处理、批量操作、缓存优化
 4. **稳定可靠**：故障转移、自动重连、优雅降级
 
@@ -743,7 +743,7 @@ social_platform_crawler/
 │   │   ├── llm_client.py            # API客户端
 │   │   ├── llm_cache.py             # 结果缓存
 │   │   ├── llm_prompts.py           # Prompt管理
-│   │   └── velocity_calculator.py   # 加速度计算
+│   │   └── diff_calculator.py   # 差值计算
 │   ├── storage/
 │   │   ├── mysql_client.py          # MySQL客户端
 │   │   ├── redis_manager.py         # Redis管理
@@ -774,9 +774,9 @@ def get_realtime_data() -> List[HotSearchItem]:
 def clean(items: List[HotSearchItem]) -> List[HotSearchItem]:
     """清洗热搜数据"""
 
-# 加速度计算接口
+# 差值计算接口
 def calculate(items: List[HotSearchItem], current_time: int) -> Dict[str, Tuple[float, float]]:
-    """计算热搜加速度"""
+    """计算热搜差值"""
 
 # LLM分析接口
 def analyze(title: str) -> Dict[str, Any]:
@@ -807,6 +807,6 @@ class HotSearchItem:
     latest_crawl_time: int       # 最新爬取时间（秒）
     first_on_board_time: int     # 首次上榜时间（秒）
     item_id: str                 # 唯一标识 MD5(title)
-    heat_velocity: float         # 热度加速度
-    rank_velocity: float         # 排名加速度
+    heat_diff: int         # 热度差值
+    rank_diff: int         # 排名差值
 ```

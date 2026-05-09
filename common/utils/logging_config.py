@@ -53,6 +53,33 @@ logger.addHandler(console_handler)
 # 阻止日志向上一级父节点传播（防止被框架默认的处理器再次拦截打印）
 logger.propagate = False
 
+
+# ==================== Kafka日志支持 ====================
+
+def add_kafka_handler(kafka_producer, topic: str = 'python.logs'):
+    """
+    添加Kafka日志处理器
+    
+    Args:
+        kafka_producer: KafkaProducerWrapper实例
+        topic: Kafka主题名称
+        
+    Returns:
+        KafkaLogHandler实例
+    """
+    from common.utils.kafka_log_handler import KafkaLogHandler
+    
+    handler = KafkaLogHandler(kafka_producer, topic)
+    
+    handler.setFormatter(logging.Formatter('[%(levelname)s] - %(message)s'))
+    
+    logger.addHandler(handler)
+    
+    logger.info(f"✅ Kafka日志处理器已添加，Topic: {topic}")
+    
+    return handler
+
+
 if __name__ == '__main__':
     logger.debug('这是一条 DEBUG 级别的蓝色日志')
     logger.info('这是一条 INFO 级别的绿色日志')

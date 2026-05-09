@@ -24,8 +24,8 @@ def get_realtime_data() -> list[HotSearchItem]:
     try:
         # 在requests.get()中添加proxies参数
         response = requests.get(url, headers=headers, timeout=10)
-        response.raise_for_status()  # 如果状态码不是200，则抛出异常
-        response.encoding = response.apparent_encoding  # 自动判断编码，避免乱码
+        response.raise_for_status()
+        response.encoding = 'utf-8'
         logger.info("请求成功！")
     except requests.exceptions.RequestException as e:
         logger.error(f"请求失败：{e}")

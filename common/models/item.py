@@ -12,8 +12,8 @@ class HotSearchItem:
         self.latest_crawl_time = latest_crawl_time
         self.first_on_board_time = first_on_board_time if first_on_board_time is not None else latest_crawl_time
         self._item_id: Optional[str] = None
-        self.heat_velocity: float = 0.0
-        self.rank_velocity: float = 0.0
+        self.heat_diff: int = 0
+        self.rank_diff: int = 0
         self.sentiment_score: Optional[float] = None
         self.type_name: Optional[str] = None
         self.topic_name: Optional[str] = None
@@ -36,8 +36,8 @@ class HotSearchItem:
             'latest_crawl_time': self.latest_crawl_time,
             'first_on_board_time': self.first_on_board_time,
             'item_id': self.item_id,
-            'heat_velocity': self.heat_velocity,
-            'rank_velocity': self.rank_velocity
+            'heat_diff': self.heat_diff,
+            'rank_diff': self.rank_diff
         }
         
         if include_url:
@@ -57,8 +57,8 @@ class HotSearchItem:
             'title': self.title,
             'url': self.url,
             'heat': self.heat,
-            'heatVelocity': self.heat_velocity,
-            'rankVelocity': self.rank_velocity,
+            'heatDiff': self.heat_diff,
+            'rankDiff': self.rank_diff,
             'crawlTime': self.latest_crawl_time * 1000
         }
         

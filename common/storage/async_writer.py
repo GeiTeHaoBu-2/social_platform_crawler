@@ -1,6 +1,11 @@
 """
 模块名称: async_writer.py
 模块职责: 异步数据库写入器，实现队列+守护线程模式
+
+修复记录:
+- 2026-05-08: 修复MySQL未就绪时线程终止导致数据丢失的bug
+  - 增加启动前MySQL连接检查
+  - 线程内实现自动重连机制
 """
 
 import queue
@@ -15,6 +20,8 @@ from common.utils.logging_config import logger
 class AsyncWriter:
     BATCH_SIZE = 100
     FLUSH_INTERVAL = 5
+    MYSQL_RETRY_INTERVAL = 5
+    MYSQL_MAX_RETRIES = 10
     
     def __init__(self, db_config: Dict[str, Any], platform: str = 'weibo'):
         self.db_config = db_config
@@ -35,7 +42,27 @@ class AsyncWriter:
         
         logger.info("AsyncWriter初始化完成")
     
+    def _ensure_mysql_ready(self) -> bool:
+        """
+        启动前检查MySQL连接是否可用
+        
+        Returns:
+            True: MySQL已就绪
+            False: MySQL未就绪（但允许继续启动，由线程内重连）
+        """
+        try:
+            test_client = MySQLClient(self.db_config, self.platform)
+            test_client.close()
+            logger.info("✅ MySQL连接测试成功，数据库已就绪")
+            return True
+        except Exception as e:
+            logger.warning(f"⚠️  MySQL连接测试失败: {e}")
+            logger.warning(f"   将在后台线程中持续尝试重连...")
+            return False
+    
     def start(self):
+        self._ensure_mysql_ready()
+        
         self._base_worker = threading.Thread(
             target=self._base_writer_loop,
             name="AsyncBaseWriter",
@@ -103,17 +130,23 @@ class AsyncWriter:
             return False
     
     def _base_writer_loop(self):
-        try:
-            self._base_mysql_client = MySQLClient(self.db_config, self.platform)
-            logger.info("[BaseWriter] MySQL连接已创建")
-        except Exception as e:
-            logger.error(f"[BaseWriter] MySQL连接创建失败: {e}")
-            return
-        
         buffer = []
         last_flush_time = time.time()
+        reconnect_attempts = 0
         
         while not self._stop_event.is_set() or not self.base_queue.empty():
+            if self._base_mysql_client is None:
+                try:
+                    self._base_mysql_client = MySQLClient(self.db_config, self.platform)
+                    logger.info("✅ [BaseWriter] MySQL连接已创建")
+                    reconnect_attempts = 0
+                except Exception as e:
+                    reconnect_attempts += 1
+                    if reconnect_attempts <= 3 or reconnect_attempts % 10 == 0:
+                        logger.warning(f"⚠️  [BaseWriter] MySQL连接失败 (第{reconnect_attempts}次): {e}")
+                    time.sleep(self.MYSQL_RETRY_INTERVAL)
+                    continue
+            
             try:
                 item = self.base_queue.get(timeout=0.1)
                 buffer.append(item)
@@ -127,9 +160,13 @@ class AsyncWriter:
             )
             
             if should_flush and buffer:
-                self._write_base_batch(buffer)
-                buffer = []
-                last_flush_time = current_time
+                try:
+                    self._write_base_batch(buffer)
+                    buffer = []
+                    last_flush_time = current_time
+                except Exception as e:
+                    logger.error(f"❌ [BaseWriter] 写入失败，将重试: {e}")
+                    self._base_mysql_client = None
         
         if buffer:
             self._write_base_batch(buffer)
@@ -139,17 +176,23 @@ class AsyncWriter:
             logger.info("[BaseWriter] MySQL连接已关闭")
     
     def _analysis_writer_loop(self):
-        try:
-            self._analysis_mysql_client = MySQLClient(self.db_config, self.platform)
-            logger.info("[AnalysisWriter] MySQL连接已创建")
-        except Exception as e:
-            logger.error(f"[AnalysisWriter] MySQL连接创建失败: {e}")
-            return
-        
         buffer = []
         last_flush_time = time.time()
+        reconnect_attempts = 0
         
         while not self._stop_event.is_set() or not self.analysis_queue.empty():
+            if self._analysis_mysql_client is None:
+                try:
+                    self._analysis_mysql_client = MySQLClient(self.db_config, self.platform)
+                    logger.info("✅ [AnalysisWriter] MySQL连接已创建")
+                    reconnect_attempts = 0
+                except Exception as e:
+                    reconnect_attempts += 1
+                    if reconnect_attempts <= 3 or reconnect_attempts % 10 == 0:
+                        logger.warning(f"⚠️  [AnalysisWriter] MySQL连接失败 (第{reconnect_attempts}次): {e}")
+                    time.sleep(self.MYSQL_RETRY_INTERVAL)
+                    continue
+            
             try:
                 item = self.analysis_queue.get(timeout=0.1)
                 buffer.append(item)
@@ -163,9 +206,13 @@ class AsyncWriter:
             )
             
             if should_flush and buffer:
-                self._write_analysis_batch(buffer)
-                buffer = []
-                last_flush_time = current_time
+                try:
+                    self._write_analysis_batch(buffer)
+                    buffer = []
+                    last_flush_time = current_time
+                except Exception as e:
+                    logger.error(f"❌ [AnalysisWriter] 写入失败，将重试: {e}")
+                    self._analysis_mysql_client = None
         
         if buffer:
             self._write_analysis_batch(buffer)
@@ -175,17 +222,23 @@ class AsyncWriter:
             logger.info("[AnalysisWriter] MySQL连接已关闭")
     
     def _trend_writer_loop(self):
-        try:
-            self._trend_mysql_client = MySQLClient(self.db_config, self.platform)
-            logger.info("[TrendWriter] MySQL连接已创建")
-        except Exception as e:
-            logger.error(f"[TrendWriter] MySQL连接创建失败: {e}")
-            return
-        
         buffer = []
         last_flush_time = time.time()
+        reconnect_attempts = 0
         
         while not self._stop_event.is_set() or not self.trend_queue.empty():
+            if self._trend_mysql_client is None:
+                try:
+                    self._trend_mysql_client = MySQLClient(self.db_config, self.platform)
+                    logger.info("✅ [TrendWriter] MySQL连接已创建")
+                    reconnect_attempts = 0
+                except Exception as e:
+                    reconnect_attempts += 1
+                    if reconnect_attempts <= 3 or reconnect_attempts % 10 == 0:
+                        logger.warning(f"⚠️  [TrendWriter] MySQL连接失败 (第{reconnect_attempts}次): {e}")
+                    time.sleep(self.MYSQL_RETRY_INTERVAL)
+                    continue
+            
             try:
                 item = self.trend_queue.get(timeout=0.1)
                 buffer.append(item)
@@ -199,9 +252,13 @@ class AsyncWriter:
             )
             
             if should_flush and buffer:
-                self._write_trend_batch(buffer)
-                buffer = []
-                last_flush_time = current_time
+                try:
+                    self._write_trend_batch(buffer)
+                    buffer = []
+                    last_flush_time = current_time
+                except Exception as e:
+                    logger.error(f"❌ [TrendWriter] 写入失败，将重试: {e}")
+                    self._trend_mysql_client = None
         
         if buffer:
             self._write_trend_batch(buffer)
@@ -269,7 +326,7 @@ if __name__ == '__main__':
             'sentiment_score': 0.5,
             'type_name': '娱乐',
             'topic_name': f'测试话题{i}',
-            'nlp_time': int(datetime.now().timestamp())
+            'llm_time': int(datetime.now().timestamp())
         }
         writer.enqueue_analysis(analysis)
         
@@ -277,8 +334,6 @@ if __name__ == '__main__':
             'item_id': hashlib.md5(f"测试热搜{i}".encode()).hexdigest(),
             'rank_pos': i+1,
             'heat': 1000000,
-            'heat_velocity': 100.5,
-            'rank_velocity': -0.5,
             'crawl_time': int(datetime.now().timestamp() * 1000)
         }
         writer.enqueue_trend(trend)
